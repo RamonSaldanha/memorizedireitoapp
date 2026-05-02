@@ -1,10 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Gamepad2, GraduationCap, Trophy, BookOpen } from 'lucide-react-native';
 import { colors } from '../theme/colors';
-import { useAuthStore } from '../stores/authStore';
-import { useUserStore } from '../stores/userStore';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
@@ -54,10 +52,34 @@ export function AppTabs() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
       }}
     >
-      <Tab.Screen name="Jogar" component={PlayStackNavigator} />
-      <Tab.Screen name="Conquistas" component={DisciplinesScreen} />
-      <Tab.Screen name="Ranking" component={RankingScreen} />
-      <Tab.Screen name="Leis" component={LegalReferencesScreen} />
+      <Tab.Screen
+        name="Jogar"
+        component={PlayStackNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => <Gamepad2 size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Conquistas"
+        component={DisciplinesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <GraduationCap size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Ranking"
+        component={RankingScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Leis"
+        component={LegalReferencesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+        }}
+      />
     </Tab.Navigator>
   );
 }
