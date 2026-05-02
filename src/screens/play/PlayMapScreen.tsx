@@ -1,13 +1,13 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, ActivityIndicator,
-  Pressable, SafeAreaView, Animated,
+  View, Text, StyleSheet, ScrollView, ActivityIndicator,
+  Animated, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { playApi, Phase } from '../../api/play';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { PhaseCircle } from '../../components/game/PhaseCircle';
@@ -16,17 +16,16 @@ import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Nav = NativeStackNavigationProp<PlayStackParamList, 'PlayMap'>;
 
-// === Layout constants (idênticos à versão web) ===
-const TRAIL_WIDTH = 200;
+// === Layout constants base (idênticos à versão web) ===
 const VERTICAL_SPACING = 100;
+const TRAIL_WIDTH = 200;
 const X_PATTERN = [0, 35, 70, 105, 70, 35];
 const ROAD_STROKE_WIDTH = 16;
-const PHASE_ITEM_HEIGHT = 130; // Aumentado para evitar corte do balão/base 3D
-const LIST_PADDING_TOP = 50;
-const LIST_PADDING_BOTTOM = 40;
-
-// Tamanhos dos círculos (idênticos ao web)
+const PADDING_TOP = 50;
+const PADDING_BOTTOM = 80;
 const PHASE_SIZE = { current: 90, complete: 64, blocked: 58, default: 62 } as const;
+
+const SCROLL_THRESHOLD = 400;
 
 function getPhaseSize(phase: Phase): number {
   if (phase.is_current) return PHASE_SIZE.current;
@@ -35,78 +34,32 @@ function getPhaseSize(phase: Phase): number {
   return PHASE_SIZE.default;
 }
 
-function getPhaseX(index: number): number {
-  const patternIdx = index % X_PATTERN.length;
-  return X_PATTERN[patternIdx] + PHASE_SIZE.current / 2;
-}
-
 /* ================================================================
-   Componente: RoadSegment
-   Desenha o trecho de estrada entre a fase atual e a próxima.
-   ================================================================ */
-function RoadSegment({ fromIndex, toIndex }: { fromIndex: number; toIndex: number }) {
-  const fromX = getPhaseX(fromIndex);
-  const toX = getPhaseX(toIndex);
-  const controlY1 = VERTICAL_SPACING * 0.7;
-  const controlY2 = VERTICAL_SPACING * 0.3;
-
-  const d = `M ${fromX} 0 C ${fromX} ${controlY1}, ${toX} ${controlY2}, ${toX} ${VERTICAL_SPACING}`;
-
-  return (
-    <Svg
-      width={TRAIL_WIDTH}
-      height={VERTICAL_SPACING}
-      viewBox={`0 0 ${TRAIL_WIDTH} ${VERTICAL_SPACING}`}
-      style={styles.roadSegment}
-    >
-      <Path
-        d={d}
-        fill="none"
-        stroke={colors.gray[200]}
-        strokeWidth={ROAD_STROKE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-/* ================================================================
-   Componente: LegislationHeader
-   Linhas laterais + nome da legislação (igual ao web)
+   LegislationHeader — linhas laterais + nome da legislação
    ================================================================ */
 function LegislationHeader({ title }: { title: string }) {
   return (
-    <View style={styles.headerContainer}>
-      <View style={styles.headerLine} />
-      <Text style={styles.headerText} numberOfLines={1} ellipsizeMode="tail">
+    <View style={styles.legislationRow}>
+      <View style={styles.legislationLine} />
+      <Text style={styles.legislationText} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
-      <View style={styles.headerLine} />
+      <View style={styles.legislationLine} />
     </View>
   );
 }
 
 /* ================================================================
-   Componente: StartBubble
-   Balão "Começar!" com seta triangular (igual ao web)
+   StartBubble — balão "Começar!" com bounce
    ================================================================ */
 function StartBubble({ phaseSize }: { phaseSize: number }) {
   const bounce = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
+  useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(bounce, {
-          toValue: -8,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bounce, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
+        Animated.timing(bounce, { toValue: -8, duration: 800, useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 800, useNativeDriver: true }),
       ])
     );
     anim.start();
@@ -118,14 +71,13 @@ function StartBubble({ phaseSize }: { phaseSize: number }) {
       style={[
         styles.bubbleWrapper,
         {
-          top: -(phaseSize / 2 + 40),
+          bottom: phaseSize / 2 + 32,
           transform: [{ translateY: bounce }],
         },
       ]}
     >
       <View style={styles.bubble}>
         <Text style={styles.bubbleText}>Começar!</Text>
-        {/* Seta apontando para baixo */}
         <View style={styles.bubbleArrow} />
       </View>
     </Animated.View>
@@ -133,174 +85,290 @@ function StartBubble({ phaseSize }: { phaseSize: number }) {
 }
 
 /* ================================================================
-   Componente: PhaseItem
-   ================================================================ */
-function PhaseItem({
-  phase,
-  index,
-  phases,
-  onPress,
-}: {
-  phase: Phase;
-  index: number;
-  phases: Phase[];
-  onPress: () => void;
-}) {
-  const outerSize = getPhaseSize(phase);
-  const circleLeft = getPhaseX(index) - outerSize / 2;
-  const showHeader =
-    index === 0 || phase.reference_uuid !== phases[index - 1]?.reference_uuid;
-
-  return (
-    <View style={[styles.phaseRow, { height: PHASE_ITEM_HEIGHT }]}>
-      {/* Estrada até a próxima fase */}
-      {index < phases.length - 1 && (
-        <RoadSegment fromIndex={index} toIndex={index + 1} />
-      )}
-
-      {/* Header da legislação (posicionado no meio do espaço entre fases) */}
-      {showHeader && (
-        <View style={[styles.headerAbsolute, { left: circleLeft + outerSize / 2 }]}>
-          <LegislationHeader title={phase.reference_name} />
-        </View>
-      )}
-
-      {/* Círculo da fase + balão */}
-      <View
-        style={[
-          styles.circleWrapper,
-          {
-            left: circleLeft,
-            width: outerSize,
-            height: outerSize,
-            marginTop: -(outerSize / 2),
-          },
-        ]}
-      >
-        {/* Balão "Começar!" posicionado acima do círculo */}
-        {phase.is_current && !phase.is_blocked && (
-          <StartBubble phaseSize={outerSize} />
-        )}
-
-        <PhaseCircle phase={phase} onPress={onPress} />
-      </View>
-
-      {/* Label abaixo do círculo */}
-      <View style={[styles.labelWrapper, { left: circleLeft + outerSize / 2 }]}>
-        <Text
-          style={[styles.phaseLabel, phase.is_blocked && styles.phaseLabelLocked]}
-          numberOfLines={2}
-        >
-          {phase.is_review ? '↺ Revisão' : phase.reference_name.split(' ').slice(0, 2).join(' ')}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-/* ================================================================
-   Screen principal
+   PlayMapScreen
    ================================================================ */
 export function PlayMapScreen() {
   const navigation = useNavigation<Nav>();
-  const [journey, setJourney] = React.useState(0);
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+
+  // Fator responsivo idêntico à web (Map.vue:46-60)
+  const scale = screenWidth < 400 ? 0.9 : screenWidth < 640 ? 0.95 : 1.0;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['play-map', journey],
-    queryFn: () => playApi.getMap(journey || undefined),
-    select: (res) => res.data,
+    queryKey: ['play-map'],
+    queryFn: () => playApi.getMap().then((r) => r.data),
     staleTime: 30_000,
   });
 
-  const listRef = useRef<FlatList>(null);
-  const phases = data?.phases ?? [];
-  const journeyInfo = data?.journey;
+  // Estado local (mutável via load-more) — fonte da verdade após o boot
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [hasMoreAbove, setHasMoreAbove] = useState(false);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+  const [currentPhaseId, setCurrentPhaseId] = useState<number | null>(null);
+  const [showSpinnerAbove, setShowSpinnerAbove] = useState(false);
+  const [showSpinnerBelow, setShowSpinnerBelow] = useState(false);
 
-  const handleLayout = useCallback(() => {
-    if (journeyInfo?.current_phase_id && phases.length > 0) {
-      const idx = phases.findIndex((p) => p.id === journeyInfo.current_phase_id);
-      if (idx >= 0) {
-        listRef.current?.scrollToIndex({
-          index: idx,
-          viewPosition: 0.4,
-          animated: true,
+  const isLoadingAbove = useRef(false);
+  const isLoadingBelow = useRef(false);
+  const lastScrollYRef = useRef(0);
+  const lastContentHeightRef = useRef(0);
+  const pendingPrependHeightRef = useRef<number | null>(null);
+  const didInitialScrollRef = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Hidrata estado local quando a query inicial resolver
+  useEffect(() => {
+    if (data) {
+      setPhases(data.phases);
+      setHasMoreAbove(data.hasMoreAbove);
+      setHasMoreBelow(data.hasMoreBelow);
+      setCurrentPhaseId(data.currentPhaseId);
+      didInitialScrollRef.current = false;
+    }
+  }, [data]);
+
+  // Posições escaladas (idêntico à web Map.vue:63-70)
+  const positions = useMemo(() =>
+    phases.map((_, i) => ({
+      x: (X_PATTERN[i % X_PATTERN.length] + PHASE_SIZE.current / 2) * scale,
+      y: i * VERTICAL_SPACING * scale + VERTICAL_SPACING * scale + PADDING_TOP,
+    })),
+    [phases, scale]
+  );
+
+  // Path Bézier cúbico (idêntico à web Map.vue:78-93)
+  const roadPath = useMemo(() => {
+    if (positions.length < 2) return '';
+    let d = `M ${positions[0].x} ${positions[0].y}`;
+    for (let i = 1; i < positions.length; i++) {
+      const prev = positions[i - 1];
+      const curr = positions[i];
+      const cp1y = prev.y + (curr.y - prev.y) * 0.7;
+      const cp2y = prev.y + (curr.y - prev.y) * 0.3;
+      d += ` C ${prev.x} ${cp1y}, ${curr.x} ${cp2y}, ${curr.x} ${curr.y}`;
+    }
+    return d;
+  }, [positions]);
+
+  const totalHeight = positions.length * VERTICAL_SPACING * scale + PADDING_TOP + PADDING_BOTTOM;
+  const trailWidth = TRAIL_WIDTH * scale;
+
+  // === Carregar mais fases ABAIXO ===
+  const loadBelow = useCallback(async () => {
+    if (isLoadingBelow.current || phases.length === 0) return;
+    isLoadingBelow.current = true;
+    setShowSpinnerBelow(true);
+    const cursor = phases[phases.length - 1].id;
+    try {
+      const { data: more } = await playApi.getMoreMapPhases('below', cursor, 20);
+      if (more.phases.length === 0) {
+        setHasMoreBelow(false);
+      } else {
+        setPhases((prev) => {
+          // Normalizar show_legislation_header na fronteira
+          const merged = [...prev];
+          const first = { ...more.phases[0] };
+          first.show_legislation_header = first.legislation_uuid !== prev[prev.length - 1]?.legislation_uuid;
+          merged.push(first, ...more.phases.slice(1));
+          return merged;
+        });
+        setHasMoreBelow(more.hasMore);
+      }
+    } catch (e) {
+      // Silencioso — manter UI utilizável
+    } finally {
+      isLoadingBelow.current = false;
+      setShowSpinnerBelow(false);
+    }
+  }, [phases]);
+
+  // === Carregar mais fases ACIMA (preserva posição visual) ===
+  const loadAbove = useCallback(async () => {
+    if (isLoadingAbove.current || phases.length === 0) return;
+    isLoadingAbove.current = true;
+    setShowSpinnerAbove(true);
+    const cursor = phases[0].id;
+    pendingPrependHeightRef.current = lastContentHeightRef.current;
+    try {
+      const { data: more } = await playApi.getMoreMapPhases('above', cursor, 20);
+      if (more.phases.length === 0) {
+        setHasMoreAbove(false);
+        pendingPrependHeightRef.current = null;
+      } else {
+        setPhases((prev) => {
+          // Normalizar show_legislation_header na fronteira (último item do novo bloco vs primeiro do antigo)
+          const newPhases = [...more.phases];
+          const oldFirst = { ...prev[0] };
+          oldFirst.show_legislation_header = oldFirst.legislation_uuid !== newPhases[newPhases.length - 1]?.legislation_uuid;
+          return [...newPhases, oldFirst, ...prev.slice(1)];
+        });
+        setHasMoreAbove(more.hasMore);
+      }
+    } catch (e) {
+      pendingPrependHeightRef.current = null;
+    } finally {
+      isLoadingAbove.current = false;
+      setShowSpinnerAbove(false);
+    }
+  }, [phases]);
+
+  // === onScroll: detecta proximidade das bordas ===
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
+    lastScrollYRef.current = contentOffset.y;
+
+    if (contentOffset.y < SCROLL_THRESHOLD && hasMoreAbove && !isLoadingAbove.current) {
+      loadAbove();
+    }
+    if (
+      contentOffset.y + layoutMeasurement.height > contentSize.height - SCROLL_THRESHOLD &&
+      hasMoreBelow &&
+      !isLoadingBelow.current
+    ) {
+      loadBelow();
+    }
+  }, [hasMoreAbove, hasMoreBelow, loadAbove, loadBelow]);
+
+  // === onContentSizeChange: restaura posição após prepend + auto-scroll inicial ===
+  const onContentSizeChange = useCallback((_w: number, h: number) => {
+    // 1) Restauração de posição após prepend
+    if (pendingPrependHeightRef.current !== null) {
+      const delta = h - pendingPrependHeightRef.current;
+      pendingPrependHeightRef.current = null;
+      if (delta > 0) {
+        scrollRef.current?.scrollTo({
+          y: lastScrollYRef.current + delta,
+          animated: false,
         });
       }
     }
-  }, [phases, journeyInfo]);
+
+    lastContentHeightRef.current = h;
+
+    // 2) Auto-scroll para a fase atual (uma vez)
+    if (!didInitialScrollRef.current && currentPhaseId !== null && phases.length > 0) {
+      const idx = phases.findIndex((p) => p.id === currentPhaseId);
+      if (idx >= 0 && positions[idx]) {
+        const targetY = positions[idx].y - screenHeight / 2;
+        const clamped = Math.max(0, Math.min(targetY, h - screenHeight));
+        scrollRef.current?.scrollTo({ y: clamped, animated: false });
+        didInitialScrollRef.current = true;
+      }
+    }
+  }, [currentPhaseId, phases, positions, screenHeight]);
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.center}>
+      <SafeAreaView style={styles.center} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color={colors.purple[500]} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <AppHeader />
-
-      {/* Navegação de jornadas */}
-      {journeyInfo && journeyInfo.total > 1 && (
-        <View style={styles.journeyNav}>
-          <Pressable
-            style={[styles.navBtn, !journeyInfo.has_previous && styles.navBtnDisabled]}
-            onPress={() => setJourney(journeyInfo.current - 1)}
-            disabled={!journeyInfo.has_previous}
-          >
-            <ChevronLeft
-              size={20}
-              color={journeyInfo.has_previous ? colors.purple[500] : colors.gray[300]}
-            />
-          </Pressable>
-          <Text style={styles.journeyTitle}>
-            {journeyInfo.journey_title ?? `Jornada ${journeyInfo.current}`}
-          </Text>
-          <Pressable
-            style={[styles.navBtn, !journeyInfo.has_next && styles.navBtnDisabled]}
-            onPress={() => setJourney(journeyInfo.current + 1)}
-            disabled={!journeyInfo.has_next}
-          >
-            <ChevronRight
-              size={20}
-              color={journeyInfo.has_next ? colors.purple[500] : colors.gray[300]}
-            />
-          </Pressable>
-        </View>
-      )}
 
       {phases.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyText}>Selecione legislações para começar</Text>
         </View>
       ) : (
-        <FlatList
-          ref={listRef}
-          data={phases}
-          keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
-          style={styles.flatList}
-          onLayout={handleLayout}
-          getItemLayout={(_, index) => ({
-            length: PHASE_ITEM_HEIGHT,
-            offset: PHASE_ITEM_HEIGHT * index,
-            index,
-          })}
-          onScrollToIndexFailed={() => {}}
-          renderItem={({ item, index }) => (
-            <PhaseItem
-              phase={item}
-              index={index}
-              phases={phases}
-              onPress={() => {
-                if (!item.is_blocked) {
-                  navigation.navigate('PlayPhase', { phaseId: item.id });
-                }
-              }}
-            />
-          )}
-        />
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          onScroll={onScroll}
+          onContentSizeChange={onContentSizeChange}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.mapContainer, { width: trailWidth, height: totalHeight }]}>
+            {/* Spinner topo */}
+            {showSpinnerAbove && (
+              <View style={[styles.spinnerWrap, { top: 8 }]} pointerEvents="none">
+                <ActivityIndicator size="small" color={colors.purple[500]} />
+              </View>
+            )}
+
+            {/* SVG da trilha */}
+            <Svg
+              width={trailWidth}
+              height={totalHeight}
+              viewBox={`0 0 ${trailWidth} ${totalHeight}`}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            >
+              <Path
+                d={roadPath}
+                fill="none"
+                stroke={colors.gray[200]}
+                strokeWidth={ROAD_STROKE_WIDTH * scale}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+
+            {/* Headers de legislação */}
+            {phases.map((p, i) =>
+              p.show_legislation_header ? (
+                <View
+                  key={`hdr-${p.id}`}
+                  style={[
+                    styles.legislationWrapper,
+                    {
+                      top: positions[i].y - (VERTICAL_SPACING * scale) / 2 - 10,
+                      left: positions[i].x,
+                    },
+                  ]}
+                >
+                  <LegislationHeader title={p.legislation_title} />
+                </View>
+              ) : null
+            )}
+
+            {/* Fases */}
+            {phases.map((phase, i) => {
+              const baseSize = getPhaseSize(phase);
+              const size = baseSize * scale;
+              return (
+                <View
+                  key={phase.id}
+                  style={[
+                    styles.phaseWrapper,
+                    {
+                      left: positions[i].x - size / 2,
+                      top: positions[i].y - size / 2,
+                      width: size,
+                      height: size,
+                    },
+                  ]}
+                >
+                  {phase.is_current && !phase.is_blocked && (
+                    <StartBubble phaseSize={size} />
+                  )}
+
+                  <View style={{ transform: [{ scale }], width: baseSize, height: baseSize }}>
+                    <PhaseCircle
+                      phase={phase}
+                      onPress={() => {
+                        if (!phase.is_blocked) {
+                          navigation.navigate('PlayPhase', { phaseId: phase.id });
+                        }
+                      }}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* Spinner fim */}
+            {showSpinnerBelow && (
+              <View style={[styles.spinnerWrap, { bottom: 8 }]} pointerEvents="none">
+                <ActivityIndicator size="small" color={colors.purple[500]} />
+              </View>
+            )}
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -309,60 +377,33 @@ export function PlayMapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  flatList: { overflow: 'visible' },
-  list: {
-    paddingTop: LIST_PADDING_TOP,
-    paddingBottom: LIST_PADDING_BOTTOM,
-    // Centraliza a trilha na tela
+  scrollContent: {
     alignItems: 'center',
+    paddingBottom: PADDING_BOTTOM,
   },
-  journeyNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  navBtn: { padding: 8 },
-  navBtnDisabled: { opacity: 0.3 },
-  journeyTitle: { fontSize: 14, fontWeight: '600', color: colors.gray[700] },
 
-  /* ---------- PhaseRow ---------- */
-  phaseRow: {
-    width: TRAIL_WIDTH,
+  mapContainer: {
     position: 'relative',
-    overflow: 'visible',
   },
 
-  /* ---------- Estrada ---------- */
-  roadSegment: {
+  /* ---------- Legislation Header ---------- */
+  legislationWrapper: {
     position: 'absolute',
-    top: PHASE_ITEM_HEIGHT / 2, // começa no centro vertical do item
-    left: 0,
-    pointerEvents: 'none',
-  },
-
-  /* ---------- Header de Legislação ---------- */
-  headerAbsolute: {
-    position: 'absolute',
-    top: -VERTICAL_SPACING / 2 - 10,
     width: 280,
-    marginLeft: -140, // centraliza (-50%)
+    marginLeft: -140,
     zIndex: 5,
   },
-  headerContainer: {
+  legislationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  headerLine: {
+  legislationLine: {
     flex: 1,
     height: 1,
     backgroundColor: colors.gray[300],
   },
-  headerText: {
+  legislationText: {
     fontSize: 11,
     fontWeight: '500',
     color: colors.gray[500],
@@ -407,32 +448,25 @@ const styles = StyleSheet.create({
     borderTopColor: '#fff',
   },
 
-  /* ---------- Círculo da fase ---------- */
-  circleWrapper: {
+  /* ---------- Phase Wrapper ---------- */
+  phaseWrapper: {
     position: 'absolute',
-    top: PHASE_ITEM_HEIGHT / 2,
     zIndex: 10,
-  },
-
-  /* ---------- Label ---------- */
-  labelWrapper: {
-    position: 'absolute',
-    top: PHASE_ITEM_HEIGHT / 2 + 44,
-    marginLeft: -60,
-    width: 120,
+    overflow: 'visible',
     alignItems: 'center',
-    zIndex: 10,
-  },
-  phaseLabel: {
-    fontSize: 12,
-    color: colors.gray[600],
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  phaseLabelLocked: {
-    color: colors.gray[300],
+    justifyContent: 'center',
   },
 
+  /* ---------- Spinners ---------- */
+  spinnerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+
+  /* ---------- Empty ---------- */
   emptyText: {
     fontSize: 16,
     color: colors.mutedForeground,

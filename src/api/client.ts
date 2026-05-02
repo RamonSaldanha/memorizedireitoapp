@@ -3,8 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 
 // Em dev: IP da sua máquina na rede local. Em prod: URL do servidor.
 export const API_BASE_URL = __DEV__
-  ? 'http://192.168.1.38:8000/api/v1'  // Android emulator → localhost da máquina
-  : 'https://SEU_DOMINIO.com/api/v1';
+  ? 'https://memorizedireito.com/api/v1'  // Android emulator → localhost da máquina
+  : 'https://memorizedireito.com/api/v1';
 
 export const TOKEN_KEY = 'sanctum_token';
 

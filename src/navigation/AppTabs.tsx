@@ -5,6 +5,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { colors } from '../theme/colors';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
+import { PlayMapScreen } from '../screens/play/PlayMapScreen';
+import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
+import { DisciplinesScreen } from '../screens/DisciplinesScreen';
+import { RankingScreen } from '../screens/RankingScreen';
+import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
 
 export type PlayStackParamList = {
   PlayMap: undefined;
@@ -13,29 +18,11 @@ export type PlayStackParamList = {
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
 
-function PlaceholderScreen({ title }: { title: string }) {
-  const { logout } = useAuthStore();
-  const { lives, xp, hasInfiniteLives } = useUserStore();
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 24, fontWeight: '800' }}>{title}</Text>
-      <Text>Vidas: {hasInfiniteLives ? '∞' : lives} | XP: {xp}</Text>
-      <Pressable
-        onPress={logout}
-        style={{ backgroundColor: '#ef4444', padding: 12, borderRadius: 8, marginTop: 24 }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '700' }}>Sair</Text>
-      </Pressable>
-    </View>
-  );
-}
-
 function PlayStackNavigator() {
   return (
     <PlayStack.Navigator screenOptions={{ headerShown: false }}>
-      <PlayStack.Screen name="PlayMap">
-        {() => <PlaceholderScreen title="Jogar" />}
-      </PlayStack.Screen>
+      <PlayStack.Screen name="PlayMap" component={PlayMapScreen} />
+      <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
     </PlayStack.Navigator>
   );
 }
@@ -68,15 +55,9 @@ export function AppTabs() {
       }}
     >
       <Tab.Screen name="Jogar" component={PlayStackNavigator} />
-      <Tab.Screen name="Conquistas">
-        {() => <PlaceholderScreen title="Conquistas" />}
-      </Tab.Screen>
-      <Tab.Screen name="Ranking">
-        {() => <PlaceholderScreen title="Ranking" />}
-      </Tab.Screen>
-      <Tab.Screen name="Leis">
-        {() => <PlaceholderScreen title="Leis" />}
-      </Tab.Screen>
+      <Tab.Screen name="Conquistas" component={DisciplinesScreen} />
+      <Tab.Screen name="Ranking" component={RankingScreen} />
+      <Tab.Screen name="Leis" component={LegalReferencesScreen} />
     </Tab.Navigator>
   );
 }

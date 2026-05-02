@@ -28,48 +28,45 @@ export type PhaseProgress = {
   completed: number;
   total: number;
   percentage: number;
-  is_fully_complete: boolean;
-  all_attempted: boolean;
-  has_errors: boolean;
-  article_status: ('correct' | 'incorrect' | 'pending')[];
+  block_status: ('correct' | 'incorrect' | 'pending')[];
 };
 
 export type Phase = {
   id: number;
-  title: string;
-  reference_name: string;
-  reference_uuid: string;
-  article_count: number;
-  difficulty: number;
-  first_article: string | null;
-  phase_number: number;
-  chunk_index?: number;
+  legislation_uuid: string;
+  legislation_title: string;
+  block_count: number;
+  show_legislation_header: boolean;
   is_complete: boolean;
-  progress: PhaseProgress;
   is_blocked: boolean;
   is_current: boolean;
-  is_review: boolean;
+  is_review?: boolean;
+  progress: PhaseProgress;
 };
 
-export type JourneyInfo = {
-  current: number;
-  total: number;
-  has_previous: boolean;
-  has_next: boolean;
-  phases_in_journey: number;
-  total_phases: number;
-  journey_title: string | null;
-  current_phase_id: number | null;
+export type MapResponse = {
+  phases: Phase[];
+  legislations: Array<{ uuid: string; title: string; total_blocks: number }>;
+  selectedLegislationUuids: string[];
+  currentPhaseId: number | null;
+  hasMoreAbove: boolean;
+  hasMoreBelow: boolean;
+  totalPhases: number;
+  user: { lives: number; has_infinite_lives: boolean; xp: number };
+};
+
+export type LoadMorePhasesResponse = {
+  phases: Phase[];
+  hasMore: boolean;
 };
 
 export const playApi = {
-  getMap: (journey?: number) =>
-    apiClient.get<{
-      phases: Phase[];
-      journey: JourneyInfo;
-      user: { lives: number; has_infinite_lives: boolean; xp: number };
-      has_preferences: boolean;
-    }>('/play/map', { params: journey ? { journey } : {} }),
+  getMap: () => apiClient.get<MapResponse>('/play/map'),
+
+  getMoreMapPhases: (direction: 'above' | 'below', cursor: number, limit = 20) =>
+    apiClient.get<LoadMorePhasesResponse>('/play/map/more', {
+      params: { direction, cursor, limit },
+    }),
 
   getPhase: (phaseId: number) =>
     apiClient.get<{

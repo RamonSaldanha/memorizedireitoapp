@@ -4,19 +4,41 @@ type UserState = {
   lives: number;
   hasInfiniteLives: boolean;
   xp: number;
+  name: string | null;
+  avatar: string | null;
   setLives: (lives: number) => void;
   setHasInfiniteLives: (v: boolean) => void;
   setXp: (xp: number) => void;
-  updateFromApi: (data: { lives: number; has_infinite_lives: boolean; xp: number }) => void;
+  setName: (name: string | null) => void;
+  setAvatar: (avatar: string | null) => void;
+  updateFromApi: (data: {
+    lives: number;
+    has_infinite_lives: boolean;
+    xp: number;
+    name?: string | null;
+    avatar?: string | null;
+  }) => void;
 };
 
 export const useUserStore = create<UserState>((set) => ({
   lives: 5,
   hasInfiniteLives: false,
   xp: 0,
+  name: null,
+  avatar: null,
   setLives: (lives) => set({ lives }),
   setHasInfiniteLives: (v) => set({ hasInfiniteLives: v }),
   setXp: (xp) => set({ xp }),
-  updateFromApi: (data) =>
-    set({ lives: data.lives, hasInfiniteLives: data.has_infinite_lives, xp: data.xp }),
+  setName: (name) => set({ name }),
+  setAvatar: (avatar) => set({ avatar }),
+  updateFromApi: (data) => {
+    const update: Partial<UserState> = {
+      lives: data.lives,
+      hasInfiniteLives: data.has_infinite_lives,
+      xp: data.xp,
+    };
+    if (data.name !== undefined) update.name = data.name;
+    if (data.avatar !== undefined) update.avatar = data.avatar;
+    set(update);
+  },
 }));
