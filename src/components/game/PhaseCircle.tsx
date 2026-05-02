@@ -191,11 +191,12 @@ const styles = StyleSheet.create({
   currentBase: {
     position: 'absolute',
     backgroundColor: '#1e40af', // blue-800 do web
-    top: 5,
+    top: 16,
     zIndex: 0,
   },
   currentInner: {
     position: 'absolute',
+    top: 11,
     backgroundColor: colors.blue[500],
     alignItems: 'center',
     justifyContent: 'center',
