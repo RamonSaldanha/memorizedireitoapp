@@ -430,11 +430,12 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     color: colors.gray[700],
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
   },
   bubbleArrow: {
     position: 'absolute',
+    marginTop: 15,
     top: '100%',
     width: 0,
     height: 0,
