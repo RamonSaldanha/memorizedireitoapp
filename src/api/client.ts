@@ -1,5 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { useAuthStore } from '../stores/authStore';
+import { useUserStore } from '../stores/userStore';
 
 // Em dev: IP da sua máquina na rede local. Em prod: URL do servidor.
 export const API_BASE_URL = __DEV__
@@ -26,12 +28,14 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Em 401: limpa token (logout silencioso — o RootNavigator vai reagir via store)
+// Em 401: limpa token e sincroniza os stores (sem bater na API para evitar loop)
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
+      useAuthStore.setState({ token: null, user: null });
+      useUserStore.getState().reset();
     }
     return Promise.reject(error);
   }

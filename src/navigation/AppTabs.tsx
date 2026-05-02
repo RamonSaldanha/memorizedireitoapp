@@ -1,13 +1,15 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Gamepad2, GraduationCap, Trophy, BookOpen } from 'lucide-react-native';
+import { Gamepad2, GraduationCap, Trophy, BookOpen, User } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
 import { RankingScreen } from '../screens/RankingScreen';
 import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
+import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 
 export type PlayStackParamList = {
   PlayMap: undefined;
@@ -25,11 +27,28 @@ function PlayStackNavigator() {
   );
 }
 
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  ChangePassword: undefined;
+};
+
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
 export type TabParamList = {
   Jogar: undefined;
   Conquistas: undefined;
   Ranking: undefined;
   Leis: undefined;
+  Perfil: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -78,6 +97,13 @@ export function AppTabs() {
         component={LegalReferencesScreen}
         options={{
           tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Perfil"
+        component={ProfileStackNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
     </Tab.Navigator>

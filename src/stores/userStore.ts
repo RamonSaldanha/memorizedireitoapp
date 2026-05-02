@@ -11,6 +11,7 @@ type UserState = {
   setXp: (xp: number) => void;
   setName: (name: string | null) => void;
   setAvatar: (avatar: string | null) => void;
+  reset: () => void;
   updateFromApi: (data: {
     lives: number;
     has_infinite_lives: boolean;
@@ -31,6 +32,7 @@ export const useUserStore = create<UserState>((set) => ({
   setXp: (xp) => set({ xp }),
   setName: (name) => set({ name }),
   setAvatar: (avatar) => set({ avatar }),
+  reset: () => set({ lives: 5, hasInfiniteLives: false, xp: 0, name: null, avatar: null }),
   updateFromApi: (data) => {
     const update: Partial<UserState> = {
       lives: data.lives,

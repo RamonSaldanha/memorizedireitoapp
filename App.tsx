@@ -7,10 +7,16 @@ import { useAuthStore } from './src/stores/authStore';
 import { useUserStore } from './src/stores/userStore';
 import { authApi } from './src/api/auth';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { useAppearance } from './src/hooks/useAppearance';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
+
+function ThemedStatusBar() {
+  const { isDark } = useAppearance();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
 
 function AppBootstrap() {
   const { initialize, token, setUser } = useAuthStore();
@@ -30,6 +36,8 @@ function AppBootstrap() {
             lives: res.data.lives,
             has_infinite_lives: res.data.has_infinite_lives,
             xp: res.data.xp,
+            name: res.data.name,
+            avatar: res.data.avatar,
           });
         })
         .catch(() => {});
@@ -51,7 +59,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
+        <ThemedStatusBar />
         <AppBootstrap />
       </QueryClientProvider>
     </SafeAreaProvider>

@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { TOKEN_KEY } from '../api/client';
+import { profileApi } from '../api/profile';
 import type { UserData } from '../api/auth';
+import { useUserStore } from './userStore';
 
 type AuthState = {
   token: string | null;
@@ -26,7 +28,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user }),
 
   logout: async () => {
+    try {
+      await profileApi.logout();
+    } catch {
+      // Ignora erro de rede — o token será apagado localmente de qualquer forma
+    }
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+    useUserStore.getState().reset();
     set({ token: null, user: null });
   },
 
