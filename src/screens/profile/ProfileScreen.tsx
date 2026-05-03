@@ -8,7 +8,9 @@ import {
   Alert,
   TextInput,
   Switch,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
@@ -92,7 +94,9 @@ export function ProfileScreen() {
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <ScrollView style={{ backgroundColor: theme.background }}>
       {/* Card do usuário */}
       <View style={[styles.userCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Avatar name={name ?? ''} uri={avatar ?? undefined} size={80} style={styles.avatarLarge} />
@@ -289,6 +293,7 @@ export function ProfileScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
