@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, KeyboardAvoidingView,
-  Platform, ScrollView, TouchableOpacity,
+  Platform, ScrollView, TouchableOpacity, StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../stores/authStore';
@@ -61,36 +62,40 @@ export function RegisterScreen({ navigation }: Props) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Voltar</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>← Voltar</Text>
+          </TouchableOpacity>
 
-        <View style={styles.header}>
-          <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Comece a estudar hoje</Text>
-        </View>
+          <View style={styles.header}>
+            <Text style={styles.title}>Criar conta</Text>
+            <Text style={styles.subtitle}>Comece a estudar hoje</Text>
+          </View>
 
-        <View style={styles.form}>
-          <Input label="Nome" value={name} onChangeText={setName} placeholder="Seu nome completo" autoCapitalize="words" />
-          <Input label="E-mail" value={email} onChangeText={setEmail} placeholder="seu@email.com" keyboardType="email-address" autoCapitalize="none" />
-          <Input label="Senha" value={password} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" secureTextEntry />
-          <Input label="Confirmar senha" value={passwordConfirmation} onChangeText={setPasswordConfirmation} placeholder="Repita a senha" secureTextEntry />
-          {!!error && <Text style={styles.error}>{error}</Text>}
-          <GameButton variant="green" size="lg" fullWidth onPress={handleRegister} disabled={loading}>
-            {loading ? 'Cadastrando...' : 'Criar conta'}
-          </GameButton>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={styles.form}>
+            <Input label="Nome" value={name} onChangeText={setName} placeholder="Seu nome completo" autoCapitalize="words" />
+            <Input label="E-mail" value={email} onChangeText={setEmail} placeholder="seu@email.com" keyboardType="email-address" autoCapitalize="none" />
+            <Input label="Senha" value={password} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" secureTextEntry />
+            <Input label="Confirmar senha" value={passwordConfirmation} onChangeText={setPasswordConfirmation} placeholder="Repita a senha" secureTextEntry />
+            {!!error && <Text style={styles.error}>{error}</Text>}
+            <GameButton variant="green" size="lg" fullWidth onPress={handleRegister} disabled={loading}>
+              {loading ? 'Cadastrando...' : 'Criar conta'}
+            </GameButton>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, padding: 24, gap: 24 },
   back: { paddingTop: 16 },

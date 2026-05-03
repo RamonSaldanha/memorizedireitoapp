@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { authApi } from '../../api/auth';
 import { Input } from '../../components/ui/Input';
@@ -26,42 +27,46 @@ export function ForgotPasswordScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.back}>← Voltar</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <ScrollView contentContainerStyle={styles.container}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.back}>← Voltar</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.title}>Recuperar senha</Text>
+        <Text style={styles.title}>Recuperar senha</Text>
 
-      {sent ? (
-        <View style={styles.sentBox}>
-          <Text style={styles.sentText}>
-            Se o e-mail existir em nossa base, você receberá um link de redefinição em breve.
-          </Text>
-          <GameButton variant="blue" onPress={() => navigation.navigate('Login')}>
-            Voltar ao login
-          </GameButton>
-        </View>
-      ) : (
-        <View style={styles.form}>
-          <Input
-            label="E-mail"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="seu@email.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <GameButton variant="blue" size="lg" fullWidth onPress={handleSend} disabled={loading}>
-            {loading ? 'Enviando...' : 'Enviar link'}
-          </GameButton>
-        </View>
-      )}
-    </ScrollView>
+        {sent ? (
+          <View style={styles.sentBox}>
+            <Text style={styles.sentText}>
+              Se o e-mail existir em nossa base, você receberá um link de redefinição em breve.
+            </Text>
+            <GameButton variant="blue" onPress={() => navigation.navigate('Login')}>
+              Voltar ao login
+            </GameButton>
+          </View>
+        ) : (
+          <View style={styles.form}>
+            <Input
+              label="E-mail"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="seu@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <GameButton variant="blue" size="lg" fullWidth onPress={handleSend} disabled={loading}>
+              {loading ? 'Enviando...' : 'Enviar link'}
+            </GameButton>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, padding: 24, gap: 24, backgroundColor: colors.background },
   back: { fontSize: 15, color: colors.blue[500], fontWeight: '600', paddingTop: 16 },
   title: { fontSize: 28, fontWeight: '800', color: colors.foreground },
