@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
-import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2 } from 'lucide-react-native';
+import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2, Gem, ChevronRight } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
@@ -26,6 +26,7 @@ import { usePreferencesStore } from '../../stores/preferencesStore';
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   ChangePassword: undefined;
+  Subscription: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -33,7 +34,7 @@ type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, setUser, logout } = useAuthStore();
-  const { name, avatar } = useUserStore();
+  const { name, avatar, hasInfiniteLives } = useUserStore();
   const { appearance, setAppearance, isDark, theme } = useAppearance();
   const { successSoundEnabled, setSuccessSoundEnabled } = usePreferencesStore();
   const queryClient = useQueryClient();
@@ -124,6 +125,23 @@ export function ProfileScreen() {
             <View style={styles.rowContent}>
               <Text style={[styles.rowLabel, { color: theme.foreground }]}>Alterar senha</Text>
             </View>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Seção Assinatura */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.gray[500] }]}>ASSINATURA</Text>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Pressable style={styles.row} onPress={() => navigation.navigate('Subscription')}>
+            <Gem size={20} color={colors.blue[500]} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowLabel, { color: theme.foreground }]}>Premium</Text>
+              <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
+                {hasInfiniteLives ? 'Assinatura ativa' : 'Assine para vidas infinitas'}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.gray[400]} />
           </Pressable>
         </View>
       </View>

@@ -12,11 +12,13 @@ import { RankingScreen } from '../screens/RankingScreen';
 import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
+import { SubscriptionScreen } from '../screens/profile/SubscriptionScreen';
 
 export type PlayStackParamList = {
   PlayMap: undefined;
   PlayPhase: { phaseId: number };
   NoLives: undefined;
+  Subscription: undefined;
 };
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
@@ -27,6 +29,7 @@ function PlayStackNavigator() {
       <PlayStack.Screen name="PlayMap" component={PlayMapScreen} />
       <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
       <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
+      <PlayStack.Screen name="Subscription" component={SubscriptionScreen} />
     </PlayStack.Navigator>
   );
 }
@@ -34,6 +37,7 @@ function PlayStackNavigator() {
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   ChangePassword: undefined;
+  Subscription: undefined;
 };
 
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
@@ -43,6 +47,7 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <ProfileStack.Screen name="Subscription" component={SubscriptionScreen} />
     </ProfileStack.Navigator>
   );
 }

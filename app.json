@@ -3,6 +3,7 @@
     "name": "memorize-mobile",
     "slug": "memorize-mobile",
     "version": "1.0.0",
+    "scheme": "memorize",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -39,13 +40,7 @@
       "expo-font",
       "expo-secure-store",
       "expo-audio",
-      [
-        "react-native-google-mobile-ads",
-        {
-          "androidAppId": "ca-app-pub-2585274176504938~4670776310",
-          "iosAppId": "ca-app-pub-2585274176504938~4670776310"
-        }
-      ]
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

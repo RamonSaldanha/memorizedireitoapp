@@ -1,37 +1,78 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  Pressable,
   ActivityIndicator,
-  Linking,
   Platform,
   Alert,
   ToastAndroid,
 } from 'react-native';
-import {
-  RewardedAd,
-  RewardedAdEventType,
-  AdEventType,
-  TestIds,
-} from 'react-native-google-mobile-ads';
+import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Heart, Play } from 'lucide-react-native';
+import { Heart, Gem } from 'lucide-react-native';
 import { playApi } from '../../api/play';
 import { useUserStore } from '../../stores/userStore';
 import { AppHeader } from '../../components/layout/AppHeader';
+import { GameButton } from '../../components/ui/GameButton';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Props = NativeStackScreenProps<PlayStackParamList, 'NoLives'>;
 
-const adUnitId = __DEV__
-  ? TestIds.REWARDED
-  : 'ca-app-pub-2585274176504938/4636040733';
+const ADSENSE_CLIENT_ID = 'ca-pub-2585274176504938';
+const ADSENSE_SLOT_ID = '3465272448';
+const COUNTDOWN_SECONDS = 30;
+
+const AD_HTML = `<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Anúncio</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 16px; }
+  .ad-wrap { width: 100%; min-height: 360px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .info { font-size: 13px; color: #64748b; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="ad-wrap">
+    <ins class="adsbygoogle"
+         style="display:block;width:100%;min-height:330px"
+         data-ad-client="${ADSENSE_CLIENT_ID}"
+         data-ad-slot="${ADSENSE_SLOT_ID}"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </div>
+  <div id="info" class="info">Aguarde <span id="counter">${COUNTDOWN_SECONDS}</span>s para coletar sua vida…</div>
+
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>
+  <script>
+    (adsbygoogle = window.adsbygoogle || []).push({});
+    var remaining = ${COUNTDOWN_SECONDS};
+    var counterEl = document.getElementById('counter');
+    var infoEl = document.getElementById('info');
+    var timer = setInterval(function () {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(timer);
+        infoEl.textContent = 'Pronto! Toque em Coletar vida.';
+        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage('ready');
+        }
+      } else {
+        counterEl.textContent = remaining;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>`;
 
 function showToast(message: string) {
   if (Platform.OS === 'android') {
@@ -45,62 +86,35 @@ export function NoLivesScreen({ navigation }: Props) {
   const queryClient = useQueryClient();
   const { updateFromApi, xp: currentXp } = useUserStore();
   const { theme } = useAppearance();
-
-  const rewardedRef = useRef<RewardedAd | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const webViewRef = useRef<WebView | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    const ad = RewardedAd.createForAdRequest(adUnitId, {
-      requestNonPersonalizedAdsOnly: true,
-    });
-    rewardedRef.current = ad;
-
-    const unsubLoaded = ad.addAdEventListener(
-      RewardedAdEventType.LOADED,
-      () => setIsLoaded(true),
-    );
-
-    const unsubEarned = ad.addAdEventListener(
-      RewardedAdEventType.EARNED_REWARD,
-      async () => {
-        setIsProcessing(true);
-        try {
-          const res = await playApi.rewardLife();
-          if (res.data.success) {
-            updateFromApi({ ...res.data.user, xp: currentXp });
-            queryClient.invalidateQueries({ queryKey: ['play-map'] });
-            navigation.navigate('PlayMap');
-          } else {
-            showToast('Não foi possível resgatar a vida. Tente novamente.');
-          }
-        } catch {
-          showToast('Erro ao processar recompensa. Tente novamente.');
-        } finally {
-          setIsProcessing(false);
-        }
-      },
-    );
-
-    const unsubError = ad.addAdEventListener(AdEventType.ERROR, () => {
-      showToast('Anúncio indisponível. Tente novamente em instantes.');
-    });
-
-    ad.load();
-
-    return () => {
-      unsubLoaded();
-      unsubEarned();
-      unsubError();
-    };
-  }, []);
-
-  const handleWatchAd = () => {
-    if (!isLoaded || isProcessing) return;
-    rewardedRef.current?.show();
+  const handleMessage = (event: WebViewMessageEvent) => {
+    if (event.nativeEvent.data === 'ready') {
+      setIsReady(true);
+    }
   };
 
-  const ctaDisabled = !isLoaded || isProcessing;
+  const handleCollect = async () => {
+    if (!isReady || isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const res = await playApi.rewardLife();
+      if (res.data.success) {
+        updateFromApi({ ...res.data.user, xp: currentXp });
+        queryClient.invalidateQueries({ queryKey: ['play-map'] });
+        queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+        navigation.navigate('PlayMap');
+      } else {
+        showToast('Não foi possível resgatar a vida. Tente novamente.');
+        setIsProcessing(false);
+      }
+    } catch {
+      showToast('Erro ao processar recompensa. Tente novamente.');
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -114,33 +128,46 @@ export function NoLivesScreen({ navigation }: Props) {
           </Text>
         </View>
 
-        <View style={styles.spacer} />
+        <View style={styles.webviewWrap}>
+          <WebView
+            ref={webViewRef}
+            originWhitelist={['*']}
+            source={{ html: AD_HTML, baseUrl: 'https://memorizedireito.com' }}
+            onMessage={handleMessage}
+            javaScriptEnabled
+            domStorageEnabled
+            mixedContentMode="always"
+            style={styles.webview}
+          />
+        </View>
 
-        <Pressable
-          style={[styles.cta, ctaDisabled && styles.ctaDisabled]}
-          onPress={handleWatchAd}
-          disabled={ctaDisabled}
-        >
-          {isProcessing ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Play size={20} color="#fff" fill="#fff" />
-              <Text style={styles.ctaText}>
-                {isLoaded ? 'Assistir anúncio e ganhar 1 vida' : 'Carregando anúncio…'}
-              </Text>
-            </>
-          )}
-        </Pressable>
+        <View style={styles.actions}>
+          <GameButton
+            variant="red"
+            size="lg"
+            fullWidth
+            disabled={!isReady || isProcessing}
+            onPress={handleCollect}
+          >
+            {isProcessing ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              'Coletar vida'
+            )}
+          </GameButton>
 
-        <Pressable
-          style={styles.premiumLink}
-          onPress={() => Linking.openURL('https://memorizedireito.com/subscription')}
-        >
-          <Text style={[styles.premiumText, { color: colors.purple[500] }]}>
-            ⭐ Assinar Premium
-          </Text>
-        </Pressable>
+          <View style={styles.actionSpacer} />
+
+          <GameButton
+            variant="blue"
+            size="md"
+            fullWidth
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <Gem size={18} color="#ffffff" />
+            <Text style={styles.premiumLabel}>Assinar Premium</Text>
+          </GameButton>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -150,47 +177,41 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: {
     flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
+    marginBottom: 12,
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
-  spacer: { flex: 1 },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.red[500],
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+  webviewWrap: {
+    flex: 1,
     borderRadius: 14,
-    width: '100%',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
   },
-  ctaDisabled: {
-    opacity: 0.55,
+  webview: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  ctaText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  premiumLink: {
+  actions: {
     marginTop: 16,
-    paddingVertical: 8,
   },
-  premiumText: {
-    fontSize: 14,
-    fontWeight: '600',
+  actionSpacer: {
+    height: 12,
+  },
+  premiumLabel: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

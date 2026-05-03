@@ -52,8 +52,8 @@ const GREY = {
   band: '#E5E7EB',
   inner: '#D1D5DB',
   fill: '#F3F4F6',
-  shieldBorder: '#D1D5DB',
-  shieldFill: '#E5E7EB',
+  shieldBorder: '#9CA3AF',
+  shieldFill: '#6B7280',
 };
 
 // ─── Sizes (mirrors sizeMap in the Vue component) ───────────────────────────
@@ -91,8 +91,8 @@ export function DisciplineBadge({ icon, color, level = 1, locked = false, isDark
   const innerColor = locked ? GREY.inner : color;
   const innerFill  = locked ? (isDark ? greyDark.fill  : GREY.fill)  : (isDark ? tint(color, 0.10) : lighten(color, 0.93));
 
-  const shieldOuterFill = locked ? (isDark ? greyDark.shieldBorder : GREY.shieldBorder) : (isDark ? lighten(color, 0.2) : lighten(color, 0.4));
-  const shieldInnerFill = locked ? (isDark ? greyDark.shieldFill   : GREY.shieldFill)   : (isDark ? lighten(color, 0.5) : lighten(color, 0.7));
+  const shieldOuterFill = locked ? (isDark ? greyDark.shieldBorder : GREY.shieldBorder) : color;
+  const shieldInnerFill = locked ? (isDark ? greyDark.shieldFill   : GREY.shieldFill)   : lighten(color, 0.18);
   const shieldStroke      = locked ? '#9CA3AF'          : color;
 
   return (

@@ -232,8 +232,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
           setShowCompletion(true);
         }
 
-        // Invalida o mapa para refletir progresso lá
+        // Invalida o mapa e as conquistas para refletir progresso lá
         queryClient.invalidateQueries({ queryKey: ['play-map'] });
+        queryClient.invalidateQueries({ queryKey: ['disciplines'] });
       } else {
         setLostLifeMessage(
           `Você precisa acertar pelo menos 70%. Acertou ${correctCount} de ${answers.length}.`,
@@ -246,6 +247,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
         if (r.should_redirect) {
           queryClient.invalidateQueries({ queryKey: ['play-map'] });
+          queryClient.invalidateQueries({ queryKey: ['disciplines'] });
           queryClient.invalidateQueries({ queryKey: ['phase', phaseId] });
           navigation.navigate('NoLives');
         }

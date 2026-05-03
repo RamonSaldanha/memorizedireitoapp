@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, ActivityIndicator, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect } from '@react-navigation/native';
 import { Zap, BookOpen } from 'lucide-react-native';
 import { disciplinesApi, DisciplineProgress } from '../api/disciplines';
 import { DisciplineBadge } from '../components/ui/DisciplineBadge';
@@ -19,6 +20,7 @@ const CENTER = RING_SIZE / 2;
 
 export function DisciplinesScreen() {
   const { isDark, theme } = useAppearance();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['disciplines'],
@@ -26,6 +28,12 @@ export function DisciplinesScreen() {
     select: (res) => res.data,
     staleTime: 60_000,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+    }, []),
+  );
 
   if (isLoading) {
     return (
