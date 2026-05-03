@@ -84,11 +84,10 @@ export function ActiveChallenge({
   const resultTextColor = isDark ? colors.gray[300] : colors.gray[700];
   const resultPctColor = isDark ? colors.gray[500] : colors.gray[400];
 
-  // Badges verificados em dark mode: fundos sólidos + texto preto
-  const correctBg = isDark ? '#166534' : colors.game.lacunaCorrectBg;
-  const correctText = isDark ? '#000000' : colors.green[700];
-  const wrongBg = isDark ? '#991b1b' : colors.game.lacunaWrongBg;
-  const wrongText = isDark ? '#000000' : colors.red[700];
+  const correctBg = isDark ? '#16291E' : colors.game.lacunaCorrectBg;
+  const correctText = isDark ? '#65B27E' : colors.green[700];
+  const wrongBg = isDark ? '#991b1b' : 'rgba(254,226,226,0.5)';
+  const wrongText = isDark ? '#fca5a5' : colors.red[400];
 
   return (
     <View
@@ -278,10 +277,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  resultBadgeOk: { backgroundColor: colors.green[100] },
+  resultBadgeOk: { backgroundColor: '#17281F' },
   resultBadgeFail: { backgroundColor: colors.red[100] },
   resultBadgeIcon: { fontSize: 18, fontWeight: '800' },
-  resultBadgeIconOk: { color: colors.green[600] },
+  resultBadgeIconOk: { color: '#67B07F' },
   resultBadgeIconFail: { color: colors.red[600] },
   resultText: {
     fontSize: 15,

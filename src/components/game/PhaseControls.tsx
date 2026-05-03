@@ -12,11 +12,9 @@ type Props = {
   allFilled: boolean;
   verified: boolean;
   isSubmitting: boolean;
-  isLastSegment: boolean;
   onSelect: (word: string) => void;
   onClear: () => void;
   onVerify: () => void;
-  onNext: () => void;
 };
 
 export function PhaseControls({
@@ -25,15 +23,15 @@ export function PhaseControls({
   allFilled,
   verified,
   isSubmitting,
-  isLastSegment,
   onSelect,
   onClear,
   onVerify,
-  onNext,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { isDark, theme } = useAppearance();
   const bottomPad = Math.max(insets.bottom, 8) + 8;
+
+  if (verified) return null;
 
   return (
     <View style={[styles.wrap, { paddingBottom: bottomPad, backgroundColor: theme.background, borderTopColor: theme.border }]}>
@@ -74,14 +72,7 @@ export function PhaseControls({
             </GameButton>
           </View>
         </>
-      ) : (
-        <View style={styles.actionsRow}>
-          <View />
-          <GameButton variant="blue" size="md" onPress={onNext}>
-            {isLastSegment ? 'Concluir' : 'Próximo →'}
-          </GameButton>
-        </View>
-      )}
+      ) : null}
     </View>
   );
 }

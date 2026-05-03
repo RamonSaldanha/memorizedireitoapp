@@ -102,6 +102,14 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
     initialScrollDoneRef.current = false;
   }, [active?.uuid]);
 
+  // Ao verificar, rola para o fim para exibir o resultado
+  useEffect(() => {
+    if (!verified) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }, [verified]);
+
   /* ===== Tokens de palavras disponíveis (descontando duplicatas usadas) ===== */
   const availableOptions = useMemo(() => {
     if (!active) return [];
@@ -446,11 +454,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
           allFilled={allFilled}
           verified={verified}
           isSubmitting={isSubmitting}
-          isLastSegment={false}
           onSelect={fillNextEmpty}
           onClear={clearAll}
           onVerify={handleVerify}
-          onNext={() => {}}
         />
       )}
 

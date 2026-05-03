@@ -23,7 +23,7 @@ const TRAIL_WIDTH = 200;
 const X_PATTERN = [0, 35, 70, 105, 70, 35];
 const ROAD_STROKE_WIDTH = 16;
 const PADDING_TOP = 50;
-const PADDING_BOTTOM = 80;
+const PADDING_BOTTOM = 20;
 const PHASE_SIZE = { current: 90, complete: 64, blocked: 58, default: 62 } as const;
 
 const SCROLL_THRESHOLD = 400;
@@ -265,14 +265,14 @@ export function PlayMapScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]} edges={['left', 'right']}>
         <ActivityIndicator size="large" color={colors.purple[500]} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
       <AppHeader />
 
       {phases.length === 0 ? (
