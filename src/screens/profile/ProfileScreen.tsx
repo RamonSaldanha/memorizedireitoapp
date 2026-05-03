@@ -7,11 +7,12 @@ import {
   Pressable,
   Alert,
   TextInput,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
-import { User, Mail, Lock, LogOut, Sun, Moon, Monitor } from 'lucide-react-native';
+import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
@@ -20,6 +21,7 @@ import { GameButton } from '../../components/ui/GameButton';
 import { useAppearance } from '../../hooks/useAppearance';
 import { colors } from '../../theme/colors';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePreferencesStore } from '../../stores/preferencesStore';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -33,6 +35,7 @@ export function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
   const { name, avatar } = useUserStore();
   const { appearance, setAppearance, isDark, theme } = useAppearance();
+  const { successSoundEnabled, setSuccessSoundEnabled } = usePreferencesStore();
   const queryClient = useQueryClient();
 
   const [editField, setEditField] = useState<'name' | 'email' | null>(null);
@@ -160,6 +163,28 @@ export function ProfileScreen() {
                 </Pressable>
               );
             })}
+          </View>
+        </View>
+      </View>
+
+      {/* Seção Preferências */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.gray[500] }]}>PREFERÊNCIAS</Text>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={styles.row}>
+            <Volume2 size={20} color={colors.gray[500]} />
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowLabel, { color: theme.foreground }]}>Som ao acertar</Text>
+              <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
+                Toca um sino quando você acerta um desafio
+              </Text>
+            </View>
+            <Switch
+              value={successSoundEnabled}
+              onValueChange={setSuccessSoundEnabled}
+              trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
+              thumbColor={successSoundEnabled ? colors.purple[600] : colors.gray[400]}
+            />
           </View>
         </View>
       </View>

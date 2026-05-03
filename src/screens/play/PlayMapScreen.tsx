@@ -13,6 +13,7 @@ import { AppHeader } from '../../components/layout/AppHeader';
 import { PhaseCircle } from '../../components/game/PhaseCircle';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
+import { useUserStore } from '../../stores/userStore';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Nav = NativeStackNavigationProp<PlayStackParamList, 'PlayMap'>;
@@ -95,6 +96,7 @@ function StartBubble({ phaseSize, isDark }: { phaseSize: number; isDark: boolean
 export function PlayMapScreen() {
   const navigation = useNavigation<Nav>();
   const { isDark, theme } = useAppearance();
+  const { lives, hasInfiniteLives } = useUserStore();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
 
   // Fator responsivo idêntico à web (Map.vue:46-60)
@@ -359,7 +361,11 @@ export function PlayMapScreen() {
                       isDark={isDark}
                       onPress={() => {
                         if (!phase.is_blocked) {
-                          navigation.navigate('PlayPhase', { phaseId: phase.id });
+                          if (!hasInfiniteLives && lives <= 0) {
+                            navigation.navigate('NoLives');
+                          } else {
+                            navigation.navigate('PlayPhase', { phaseId: phase.id });
+                          }
                         }
                       }}
                     />

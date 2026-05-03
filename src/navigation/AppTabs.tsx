@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
+import { NoLivesScreen } from '../screens/play/NoLivesScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
 import { RankingScreen } from '../screens/RankingScreen';
 import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
@@ -15,6 +16,7 @@ import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 export type PlayStackParamList = {
   PlayMap: undefined;
   PlayPhase: { phaseId: number };
+  NoLives: undefined;
 };
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
@@ -24,6 +26,7 @@ function PlayStackNavigator() {
     <PlayStack.Navigator screenOptions={{ headerShown: false }}>
       <PlayStack.Screen name="PlayMap" component={PlayMapScreen} />
       <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
+      <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
     </PlayStack.Navigator>
   );
 }

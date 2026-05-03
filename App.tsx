@@ -8,6 +8,7 @@ import { useUserStore } from './src/stores/userStore';
 import { authApi } from './src/api/auth';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAppearance } from './src/hooks/useAppearance';
+import { usePreferencesStore } from './src/stores/preferencesStore';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -24,7 +25,10 @@ function AppBootstrap() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initialize().finally(() => setReady(true));
+    Promise.all([
+      initialize(),
+      usePreferencesStore.getState().initialize(),
+    ]).finally(() => setReady(true));
   }, []);
 
   useEffect(() => {

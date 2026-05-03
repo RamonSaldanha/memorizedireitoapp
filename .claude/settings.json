@@ -10,7 +10,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ramon\\\\Desktop\\\\code\\\\memorize\\\\resources\\\\js\\\\pages\\\\LegislationPlay\\\\\" -Recurse | Select-Object -ExpandProperty FullName)",
       "Bash(git -C \"c:\\\\Users\\\\ramon\\\\Desktop\\\\code\\\\memorizeapp\" log --oneline -20)",
       "Read(//c/Users/ramon/Desktop/code/memorize/routes/**)",
-      "PowerShell(npx tsc --noEmit; Write-Output \"EXIT_CODE: $LASTEXITCODE\")"
+      "PowerShell(npx tsc --noEmit; Write-Output \"EXIT_CODE: $LASTEXITCODE\")",
+      "Bash(npx expo *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\ramon\\Desktop\\code\\memorize\\app\\Http\\Controllers\\Api\\V1"

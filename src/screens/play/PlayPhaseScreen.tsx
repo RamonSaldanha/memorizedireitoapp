@@ -245,8 +245,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         setVerificationResults([]);
 
         if (r.should_redirect) {
-          // Vidas zeraram — voltar ao mapa por ora
-          navigation.goBack();
+          queryClient.invalidateQueries({ queryKey: ['play-map'] });
+          queryClient.invalidateQueries({ queryKey: ['phase', phaseId] });
+          navigation.navigate('NoLives');
         }
       }
     } catch (e) {
