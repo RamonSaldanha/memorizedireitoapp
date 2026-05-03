@@ -103,6 +103,9 @@ export function ActiveChallenge({
         ) : null}
         {tokens.map((t, i) => {
           if (t.type === 'space') {
+            if (t.text.includes('\n')) {
+              return <View key={i} style={{ width: '100%' }} />;
+            }
             return <Text key={i} style={[styles.bodyText, { color: bodyTextColor }]}>{t.text}</Text>;
           }
           if (t.type === 'text') {
@@ -172,7 +175,7 @@ export function ActiveChallenge({
 const PILL_FONT_SIZE = 19;
 
 const styles = StyleSheet.create({
-  container: { paddingVertical: 24 },
+  container: { paddingVertical: 0 },
 
   bodyRow: {
     flexDirection: 'row',

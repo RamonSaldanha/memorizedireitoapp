@@ -58,11 +58,10 @@ export function CompletedSegmentView({ segment }: { segment: CompletedSegmentDat
   const bodyColor = isDark ? colors.gray[500] : colors.gray[400];
   const markerColor = isDark ? colors.gray[400] : colors.gray[500];
 
-  // Em dark mode: badges sólidos com texto preto para legibilidade
-  const correctBg = isDark ? '#166534' : colors.game.lacunaCorrectBg;
-  const correctColor = isDark ? '#000000' : colors.green[700];
+  const correctBg = isDark ? '#16291E' : colors.game.lacunaCorrectBg;
+  const correctColor = isDark ? '#65B27E' : colors.green[700];
   const wrongBg = isDark ? '#991b1b' : 'rgba(254,226,226,0.5)';
-  const wrongColor = isDark ? '#000000' : colors.red[400];
+  const wrongColor = isDark ? '#fca5a5' : colors.red[400];
 
   return (
     <View style={styles.container}>
@@ -97,7 +96,7 @@ export function CompletedSegmentView({ segment }: { segment: CompletedSegmentDat
 const styles = StyleSheet.create({
   container: {
     opacity: 0.6,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   bodyText: {
     fontSize: 17,
@@ -113,7 +112,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   wrong: {
-    textDecorationLine: 'line-through',
     paddingHorizontal: 8,
     borderRadius: 999,
     fontSize: 16,
