@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { CompletedSegment as CompletedSegmentData, SegmentAnswer } from '../../api/play';
 import { colors } from '../../theme/colors';
+import { useAppearance } from '../../hooks/useAppearance';
 
 type Token =
   | { type: 'text'; text: string; wordIndex: number }
@@ -40,7 +41,6 @@ function buildTokens(originalText: string, structuralMarker: string, answers: Se
     else out.push({ type: 'text', text: part, wordIndex: idx });
   }
 
-  // Filtra tokens 'marker' e o whitespace inicial antes do primeiro conteúdo
   const filtered = out.filter((t) => t.type !== 'marker');
   while (filtered.length > 0 && filtered[0].type === 'space') filtered.shift();
   while (filtered.length > 0 && filtered[filtered.length - 1].type === 'space') filtered.pop();
@@ -48,16 +48,21 @@ function buildTokens(originalText: string, structuralMarker: string, answers: Se
 }
 
 export function CompletedSegmentView({ segment }: { segment: CompletedSegmentData }) {
+  const { isDark } = useAppearance();
+
   const tokens = useMemo(
     () => buildTokens(segment.original_text, segment.structural_marker ?? '', segment.answers),
     [segment.uuid],
   );
 
+  const bodyColor = isDark ? colors.gray[500] : colors.gray[400];
+  const markerColor = isDark ? colors.gray[400] : colors.gray[500];
+
   return (
     <View style={styles.container}>
-      <Text style={styles.bodyText}>
+      <Text style={[styles.bodyText, { color: bodyColor }]}>
         {segment.structural_marker ? (
-          <Text style={styles.marker}>{segment.structural_marker} </Text>
+          <Text style={[styles.marker, { color: markerColor }]}>{segment.structural_marker} </Text>
         ) : null}
         {tokens.map((t, i) => {
           if (t.type === 'space') return <Text key={i}>{t.text}</Text>;
@@ -91,12 +96,10 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: 17,
     lineHeight: 28,
-    color: colors.gray[400],
     fontWeight: '400',
   },
   marker: {
     fontWeight: '700',
-    color: colors.gray[500],
   },
   correct: {
     backgroundColor: colors.game.lacunaCorrectBg,

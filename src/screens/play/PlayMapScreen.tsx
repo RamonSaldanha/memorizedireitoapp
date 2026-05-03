@@ -12,6 +12,7 @@ import { playApi, Phase } from '../../api/play';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { PhaseCircle } from '../../components/game/PhaseCircle';
 import { colors } from '../../theme/colors';
+import { useAppearance } from '../../hooks/useAppearance';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Nav = NativeStackNavigationProp<PlayStackParamList, 'PlayMap'>;
@@ -37,14 +38,14 @@ function getPhaseSize(phase: Phase): number {
 /* ================================================================
    LegislationHeader — linhas laterais + nome da legislação
    ================================================================ */
-function LegislationHeader({ title }: { title: string }) {
+function LegislationHeader({ title, isDark }: { title: string; isDark: boolean }) {
   return (
     <View style={styles.legislationRow}>
-      <View style={styles.legislationLine} />
-      <Text style={styles.legislationText} numberOfLines={1} ellipsizeMode="tail">
+      <View style={[styles.legislationLine, { backgroundColor: isDark ? colors.gray[700] : colors.gray[300] }]} />
+      <Text style={[styles.legislationText, { color: isDark ? colors.gray[400] : colors.gray[500] }]} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
-      <View style={styles.legislationLine} />
+      <View style={[styles.legislationLine, { backgroundColor: isDark ? colors.gray[700] : colors.gray[300] }]} />
     </View>
   );
 }
@@ -52,7 +53,7 @@ function LegislationHeader({ title }: { title: string }) {
 /* ================================================================
    StartBubble — balão "Começar!" com bounce
    ================================================================ */
-function StartBubble({ phaseSize }: { phaseSize: number }) {
+function StartBubble({ phaseSize, isDark }: { phaseSize: number; isDark: boolean }) {
   const bounce = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -66,6 +67,10 @@ function StartBubble({ phaseSize }: { phaseSize: number }) {
     return () => anim.stop();
   }, []);
 
+  const bubbleBg = isDark ? colors.gray[800] : '#fff';
+  const bubbleBorder = isDark ? colors.gray[700] : colors.gray[200];
+  const textColor = isDark ? colors.gray[200] : colors.gray[700];
+
   return (
     <Animated.View
       style={[
@@ -76,9 +81,9 @@ function StartBubble({ phaseSize }: { phaseSize: number }) {
         },
       ]}
     >
-      <View style={styles.bubble}>
-        <Text style={styles.bubbleText}>Começar!</Text>
-        <View style={styles.bubbleArrow} />
+      <View style={[styles.bubble, { backgroundColor: bubbleBg, borderColor: bubbleBorder }]}>
+        <Text style={[styles.bubbleText, { color: textColor }]}>Começar!</Text>
+        <View style={[styles.bubbleArrow, { borderTopColor: bubbleBg }]} />
       </View>
     </Animated.View>
   );
@@ -89,6 +94,7 @@ function StartBubble({ phaseSize }: { phaseSize: number }) {
    ================================================================ */
 export function PlayMapScreen() {
   const navigation = useNavigation<Nav>();
+  const { isDark, theme } = useAppearance();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
 
   // Fator responsivo idêntico à web (Map.vue:46-60)
@@ -259,18 +265,18 @@ export function PlayMapScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.center} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color={colors.purple[500]} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
       <AppHeader />
 
       {phases.length === 0 ? (
-        <View style={styles.center}>
+        <View style={[styles.center, { backgroundColor: theme.background }]}>
           <Text style={styles.emptyText}>Selecione legislações para começar</Text>
         </View>
       ) : (
@@ -301,7 +307,7 @@ export function PlayMapScreen() {
               <Path
                 d={roadPath}
                 fill="none"
-                stroke={colors.gray[200]}
+                stroke={isDark ? colors.gray[700] : colors.gray[200]}
                 strokeWidth={ROAD_STROKE_WIDTH * scale}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -321,7 +327,7 @@ export function PlayMapScreen() {
                     },
                   ]}
                 >
-                  <LegislationHeader title={p.legislation_title} />
+                  <LegislationHeader title={p.legislation_title} isDark={isDark} />
                 </View>
               ) : null
             )}
@@ -344,12 +350,13 @@ export function PlayMapScreen() {
                   ]}
                 >
                   {phase.is_current && !phase.is_blocked && (
-                    <StartBubble phaseSize={size} />
+                    <StartBubble phaseSize={size} isDark={isDark} />
                   )}
 
                   <View style={{ transform: [{ scale }], width: baseSize, height: baseSize }}>
                     <PhaseCircle
                       phase={phase}
+                      isDark={isDark}
                       onPress={() => {
                         if (!phase.is_blocked) {
                           navigation.navigate('PlayPhase', { phaseId: phase.id });
@@ -375,7 +382,7 @@ export function PlayMapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: {
     alignItems: 'center',
@@ -401,12 +408,10 @@ const styles = StyleSheet.create({
   legislationLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.gray[300],
   },
   legislationText: {
     fontSize: 11,
     fontWeight: '500',
-    color: colors.gray[500],
     paddingHorizontal: 8,
     maxWidth: 180,
   },
@@ -420,16 +425,13 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   bubble: {
-    backgroundColor: '#fff',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.gray[200],
     alignItems: 'center',
   },
   bubbleText: {
-    color: colors.gray[700],
     fontSize: 11,
     fontWeight: '700',
   },
@@ -446,7 +448,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 10,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#fff',
   },
 
   /* ---------- Phase Wrapper ---------- */

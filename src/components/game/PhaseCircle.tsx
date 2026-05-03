@@ -32,9 +32,10 @@ function getPhaseIcon(phaseId: number) {
 type Props = {
   phase: Phase;
   onPress?: () => void;
+  isDark?: boolean;
 };
 
-export function PhaseCircle({ phase, onPress }: Props) {
+export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
   const sizeKey = getPhaseSize(phase);
   const outerSize = SIZES[sizeKey];
   const isClickable = !phase.is_blocked;
@@ -72,7 +73,7 @@ export function PhaseCircle({ phase, onPress }: Props) {
                 cy="50"
                 r={progressRadius}
                 fill="none"
-                stroke={colors.gray[200]}
+                stroke={isDark ? colors.gray[700] : colors.gray[200]}
                 strokeWidth="7"
               />
               {/* Progresso azul */}

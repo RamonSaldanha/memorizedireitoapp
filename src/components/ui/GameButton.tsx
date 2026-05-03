@@ -28,19 +28,30 @@ type Props = {
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
+  isDark?: boolean;
 };
 
 export function GameButton({
   children, variant = 'white', size = 'md', disabled = false,
-  onPress, style, textStyle, fullWidth = false,
+  onPress, style, textStyle, fullWidth = false, isDark = false,
 }: Props) {
-  // Apenas translateY com useNativeDriver: true — evita conflitos Android
   const translateY = useRef(new Animated.Value(0)).current;
-  const v = VARIANT_STYLES[variant];
+  const baseVariant = VARIANT_STYLES[variant];
   const s = SIZE_STYLES[size];
 
+  // Ajusta o variant "white" para dark mode
+  let v = baseVariant;
+  if (isDark && variant === 'white') {
+    v = {
+      bg: colors.gray[800],
+      border: colors.gray[600],
+      text: colors.gray[200],
+      shadow: colors.gray[600],
+    };
+  }
+
   const pressIn = useCallback(() => {
-    Animated.timing(translateY, { toValue: 3, duration: 80, useNativeDriver: true }).start();
+    Animated.timing(translateY, { toValue: 5, duration: 80, useNativeDriver: true }).start();
   }, []);
 
   const pressOut = useCallback(() => {
@@ -55,14 +66,10 @@ export function GameButton({
       disabled={disabled}
       style={fullWidth ? { width: '100%' } : undefined}
     >
-      {/* Sombra 3D: View estática abaixo do botão (box-shadow: 0 4px 0 color) */}
+      {/* Sombra 3D: View estática abaixo do botão (box-shadow: 0 6px 0 color) */}
       <View style={[
         styles.shadow,
-        {
-          backgroundColor: disabled ? colors.gray[600] : v.shadow,
-          paddingHorizontal: s.paddingH,
-          paddingVertical: s.paddingV,
-        },
+        { backgroundColor: disabled ? colors.gray[600] : v.shadow },
         style,
       ]} />
 
@@ -93,6 +100,7 @@ export function GameButton({
 const styles = StyleSheet.create({
   shadow: {
     position: 'absolute',
+    top: 6,
     bottom: 0,
     left: 0,
     right: 0,
@@ -105,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 4, // box-shadow: 0 4px 0 color (espaço sólido inferior)
+    marginBottom: 6, // box-shadow: 0 6px 0 color (espaço sólido inferior)
   },
   text: {
     fontWeight: '700',

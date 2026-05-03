@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Gamepad2, GraduationCap, Trophy, BookOpen, User } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { useAppearance } from '../hooks/useAppearance';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
@@ -54,6 +55,8 @@ export type TabParamList = {
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export function AppTabs() {
+  const { isDark, theme } = useAppearance();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -61,13 +64,13 @@ export function AppTabs() {
         tabBarStyle: {
           height: 64,
           borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.background,
+          borderTopColor: theme.border,
+          backgroundColor: theme.background,
           paddingBottom: 8,
           paddingTop: 6,
         },
         tabBarActiveTintColor: colors.purple[600],
-        tabBarInactiveTintColor: colors.gray[400],
+        tabBarInactiveTintColor: isDark ? colors.gray[500] : colors.gray[400],
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
       }}
     >

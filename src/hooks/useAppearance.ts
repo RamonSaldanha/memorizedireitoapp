@@ -1,47 +1,31 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../theme/colors';
-
-const APPEARANCE_KEY = '@appearance';
-
-type Appearance = 'light' | 'dark' | 'system';
+import { useAppearanceStore } from '../stores/appearanceStore';
 
 export function useAppearance() {
   const systemColorScheme = useColorScheme();
-  const [appearance, setAppearanceState] = useState<Appearance>('system');
-  const [isReady, setIsReady] = useState(false);
+  const systemIsDark = systemColorScheme === 'dark';
+
+  const initialized = useAppearanceStore((s) => s.initialized);
+  const initialize = useAppearanceStore((s) => s.initialize);
+  const setSystemIsDark = useAppearanceStore((s) => s.setSystemIsDark);
 
   useEffect(() => {
-    AsyncStorage.getItem(APPEARANCE_KEY)
-      .then((stored) => {
-        if (stored === 'light' || stored === 'dark' || stored === 'system') {
-          setAppearanceState(stored);
-        }
-      })
-      .finally(() => setIsReady(true));
+    if (!initialized) {
+      initialize(systemIsDark);
+    }
   }, []);
 
-  const setAppearance = useCallback(async (value: Appearance) => {
-    setAppearanceState(value);
-    await AsyncStorage.setItem(APPEARANCE_KEY, value);
-  }, []);
+  useEffect(() => {
+    if (initialized) {
+      setSystemIsDark(systemIsDark);
+    }
+  }, [systemIsDark, initialized]);
 
-  const isDark =
-    appearance === 'system'
-      ? systemColorScheme === 'dark'
-      : appearance === 'dark';
+  const appearance = useAppearanceStore((s) => s.appearance);
+  const isDark = useAppearanceStore((s) => s.isDark);
+  const theme = useAppearanceStore((s) => s.theme);
+  const setAppearance = useAppearanceStore((s) => s.setAppearance);
 
-  const theme = isDark
-    ? colors.dark
-    : {
-        background: colors.background,
-        foreground: colors.foreground,
-        card: colors.card,
-        border: colors.border,
-        muted: colors.muted,
-        mutedForeground: colors.mutedForeground,
-      };
-
-  return { appearance, setAppearance, isDark, theme, isReady };
+  return { appearance, setAppearance, isDark, theme, isReady: initialized };
 }

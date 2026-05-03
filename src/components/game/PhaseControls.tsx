@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RefreshCw } from 'lucide-react-native';
 import { GameButton } from '../ui/GameButton';
 import { colors } from '../../theme/colors';
+import { useAppearance } from '../../hooks/useAppearance';
 
 type Props = {
   options: string[];
@@ -31,10 +32,11 @@ export function PhaseControls({
   onNext,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { isDark, theme } = useAppearance();
   const bottomPad = Math.max(insets.bottom, 8) + 8;
 
   return (
-    <View style={[styles.wrap, { paddingBottom: bottomPad }]}>
+    <View style={[styles.wrap, { paddingBottom: bottomPad, backgroundColor: theme.background, borderTopColor: theme.border }]}>
       {!verified ? (
         <>
           {hasLacunas && options.length > 0 && (
@@ -45,6 +47,7 @@ export function PhaseControls({
                   variant="white"
                   size="sm"
                   onPress={() => onSelect(word)}
+                  isDark={isDark}
                 >
                   {word}
                 </GameButton>
@@ -54,9 +57,9 @@ export function PhaseControls({
 
           <View style={styles.actionsRow}>
             {hasLacunas ? (
-              <GameButton variant="white" size="sm" onPress={onClear}>
-                <RefreshCw size={14} color={colors.gray[800]} />
-                <Text style={styles.btnInline}>Limpar</Text>
+              <GameButton variant="white" size="sm" onPress={onClear} isDark={isDark}>
+                <RefreshCw size={14} color={isDark ? colors.gray[300] : colors.gray[800]} />
+                <Text style={[styles.btnInline, { color: isDark ? colors.gray[300] : colors.gray[800] }]}>Limpar</Text>
               </GameButton>
             ) : (
               <View />
@@ -88,8 +91,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
     gap: 12,
   },
   pillsRow: {
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   btnInline: {
-    color: colors.gray[800],
     fontWeight: '700',
     fontSize: 13,
   },

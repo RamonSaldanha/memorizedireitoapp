@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import type { ActiveSegment, SegmentAnswer } from '../../api/play';
 import { colors } from '../../theme/colors';
+import { useAppearance } from '../../hooks/useAppearance';
 
 type Props = {
   segment: ActiveSegment;
@@ -59,6 +60,8 @@ export function ActiveChallenge({
   onUnselect,
   onLayout,
 }: Props) {
+  const { isDark } = useAppearance();
+
   const tokens = useMemo(
     () => buildTokens(segment.original_text, segment.structural_marker ?? '', segment.lacunas),
     [segment.uuid],
@@ -76,29 +79,28 @@ export function ActiveChallenge({
   const percentage =
     segment.total_gaps > 0 ? Math.round((correctCount / segment.total_gaps) * 100) : 0;
 
+  const bodyTextColor = isDark ? colors.gray[300] : colors.gray[900];
+  const markerColor = isDark ? colors.gray[200] : colors.gray[950];
+  const resultTextColor = isDark ? colors.gray[300] : colors.gray[700];
+  const resultPctColor = isDark ? colors.gray[500] : colors.gray[400];
+
   return (
     <View
       style={styles.container}
       onLayout={(e) => onLayout?.(e.nativeEvent.layout.y)}
     >
-      {/*
-        Layout do parágrafo: flex-wrap row.
-        Cada palavra é um <Text>, cada lacuna é um <View> pill — assim conseguimos
-        borderRadius + borderBottom + padding reais (RN não renderiza isso de forma
-        confiável em <Text> inline). Espelha o "inline-flex" do web.
-      */}
       <View style={styles.bodyRow}>
         {segment.structural_marker ? (
-          <Text style={[styles.bodyText, styles.marker]}>
+          <Text style={[styles.bodyText, styles.marker, { color: markerColor }]}>
             {segment.structural_marker + ' '}
           </Text>
         ) : null}
         {tokens.map((t, i) => {
           if (t.type === 'space') {
-            return <Text key={i} style={styles.bodyText}>{t.text}</Text>;
+            return <Text key={i} style={[styles.bodyText, { color: bodyTextColor }]}>{t.text}</Text>;
           }
           if (t.type === 'text') {
-            return <Text key={i} style={styles.bodyText}>{t.text}</Text>;
+            return <Text key={i} style={[styles.bodyText, { color: bodyTextColor }]}>{t.text}</Text>;
           }
 
           // lacuna
@@ -106,17 +108,17 @@ export function ActiveChallenge({
 
           if (!verified && !filled) {
             return (
-              <View key={i} style={styles.lacunaEmpty}>
-                <Text style={styles.lacunaEmptyText}>(...)</Text>
+              <View key={i} style={[styles.lacunaEmpty, { backgroundColor: isDark ? colors.game.lacunaEmptyBgDark : colors.game.lacunaEmptyBg }]}>
+                <Text style={[styles.lacunaEmptyText, { color: isDark ? colors.game.lacunaEmptyTextDark : colors.game.lacunaEmptyText }]}>(...)</Text>
               </View>
             );
           }
           if (!verified && filled) {
             return (
               <Pressable key={i} onPress={() => onUnselect(t.gapOrder)}>
-                <View style={styles.lacunaFilled}>
-                  <Text style={styles.lacunaFilledText}>{filled}</Text>
-                  <Text style={styles.lacunaRemove}>×</Text>
+                <View style={[styles.lacunaFilled, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#38bdf8' }]}>
+                  <Text style={[styles.lacunaFilledText, isDark && { color: '#e2e8f0' }]}>{filled}</Text>
+                  <Text style={[styles.lacunaRemove, isDark && { color: '#64748b' }]}>×</Text>
                 </View>
               </Pressable>
             );
@@ -135,7 +137,7 @@ export function ActiveChallenge({
               <View style={styles.lacunaWrong}>
                 <Text style={styles.lacunaWrongText}>{r?.user_word ?? ''}</Text>
               </View>
-              <Text style={styles.bodyText}> </Text>
+              <Text style={[styles.bodyText, { color: bodyTextColor }]}> </Text>
               <View style={styles.lacunaCorrect}>
                 <Text style={styles.lacunaCorrectText}>{t.correctWord}</Text>
               </View>
@@ -151,9 +153,9 @@ export function ActiveChallenge({
               {passed ? '✓' : '✗'}
             </Text>
           </View>
-          <Text style={styles.resultText}>
+          <Text style={[styles.resultText, { color: resultTextColor }]}>
             {correctCount} de {segment.total_gaps} corretas{' '}
-            <Text style={styles.resultPct}>({percentage}%)</Text>
+            <Text style={[styles.resultPct, { color: resultPctColor }]}>({percentage}%)</Text>
           </Text>
         </View>
       )}
@@ -175,17 +177,14 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: PILL_FONT_SIZE,
     lineHeight: 32,
-    color: colors.gray[900],
     fontWeight: '500',
   },
   marker: {
     fontWeight: '800',
-    color: colors.gray[950],
   },
 
   // EMPTY (...) — pill yellow
   lacunaEmpty: {
-    backgroundColor: colors.game.lacunaEmptyBg,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -193,7 +192,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   lacunaEmptyText: {
-    color: colors.game.lacunaEmptyText,
     fontWeight: '600',
     fontSize: PILL_FONT_SIZE,
     lineHeight: 24,
@@ -281,10 +279,8 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.gray[700],
   },
   resultPct: {
     fontSize: 13,
-    color: colors.gray[400],
   },
 });

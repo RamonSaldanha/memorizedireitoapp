@@ -16,6 +16,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
 import { Avatar } from '../../components/ui/Avatar';
+import { GameButton } from '../../components/ui/GameButton';
 import { useAppearance } from '../../hooks/useAppearance';
 import { colors } from '../../theme/colors';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -80,10 +81,10 @@ export function ProfileScreen() {
     queryClient.clear();
   };
 
-  const appearanceOptions: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ReactNode }[] = [
-    { key: 'light', label: 'Claro', icon: <Sun size={18} color={theme.foreground} /> },
-    { key: 'dark', label: 'Escuro', icon: <Moon size={18} color={theme.foreground} /> },
-    { key: 'system', label: 'Sistema', icon: <Monitor size={18} color={theme.foreground} /> },
+  const appearanceOptions: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ElementType }[] = [
+    { key: 'light', label: 'Claro', icon: Sun },
+    { key: 'dark', label: 'Escuro', icon: Moon },
+    { key: 'system', label: 'Sistema', icon: Monitor },
   ];
 
   return (
@@ -129,44 +130,52 @@ export function ProfileScreen() {
         <Text style={[styles.sectionTitle, { color: colors.gray[500] }]}>APARÊNCIA</Text>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={styles.appearanceRow}>
-            {appearanceOptions.map((opt) => (
-              <Pressable
-                key={opt.key}
-                style={[
-                  styles.appearanceButton,
-                  appearance === opt.key && {
-                    backgroundColor: colors.purple[100],
-                    borderColor: colors.purple[500],
-                  },
-                  { borderColor: theme.border },
-                ]}
-                onPress={() => setAppearance(opt.key)}
-              >
-                {opt.icon}
-                <Text
+            {appearanceOptions.map((opt) => {
+              const isActive = appearance === opt.key;
+              const iconColor = isActive ? colors.purple[600] : theme.foreground;
+              const IconComponent = opt.icon;
+              return (
+                <Pressable
+                  key={opt.key}
                   style={[
-                    styles.appearanceLabel,
-                    { color: theme.foreground },
-                    appearance === opt.key && { color: colors.purple[600], fontWeight: '700' },
+                    styles.appearanceButton,
+                    isActive && {
+                      backgroundColor: colors.purple[100],
+                      borderColor: colors.purple[500],
+                    },
+                    { borderColor: theme.border },
                   ]}
+                  onPress={() => setAppearance(opt.key)}
                 >
-                  {opt.label}
-                </Text>
-              </Pressable>
-            ))}
+                  <IconComponent size={18} color={iconColor} />
+                  <Text
+                    style={[
+                      styles.appearanceLabel,
+                      { color: isActive ? colors.purple[600] : theme.foreground },
+                      isActive && { fontWeight: '700' },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       </View>
 
       {/* Sair */}
-      <View style={styles.section}>
-        <Pressable
-          style={[styles.logoutButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+      <View style={[styles.section, { marginBottom: 40 }]}>
+        <GameButton
+          variant="red"
+          size="md"
+          fullWidth
+          isDark={isDark}
           onPress={() => setIsLogoutModalVisible(true)}
         >
-          <LogOut size={20} color={colors.red[500]} />
-          <Text style={[styles.logoutText, { color: colors.red[500] }]}>Sair</Text>
-        </Pressable>
+          <LogOut size={18} color="#fff" />
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Sair</Text>
+        </GameButton>
       </View>
 
       {/* Modal de edição */}
@@ -283,16 +292,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   appearanceLabel: { fontSize: 13 },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  logoutText: { fontSize: 15, fontWeight: '600' },
   modalContent: {
     borderRadius: 16,
     padding: 20,

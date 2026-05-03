@@ -28,6 +28,7 @@ import { LostLifeToast } from '../../components/game/LostLifeToast';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useSuccessSound } from '../../hooks/useSuccessSound';
 import { colors } from '../../theme/colors';
+import { useAppearance } from '../../hooks/useAppearance';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Props = NativeStackScreenProps<PlayStackParamList, 'PlayPhase'>;
@@ -44,6 +45,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
   const { phaseId } = route.params;
   const queryClient = useQueryClient();
   const { updateFromApi } = useUserStore();
+  const { isDark, theme } = useAppearance();
 
   const { data, isLoading, error } = useQuery<PhaseDetail>({
     queryKey: ['phase', phaseId],
@@ -336,7 +338,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
   /* ===== Render ===== */
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.center}>
+      <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]}>
         <ActivityIndicator color={colors.purple[500]} size="large" />
       </SafeAreaView>
     );
@@ -344,8 +346,8 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
   if (error || !data) {
     return (
-      <SafeAreaView style={styles.center}>
-        <Text style={styles.errorTitle}>Não foi possível carregar a fase</Text>
+      <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]}>
+        <Text style={[styles.errorTitle, { color: isDark ? colors.gray[300] : colors.gray[700] }]}>Não foi possível carregar a fase</Text>
         <Pressable
           onPress={() => navigation.goBack()}
           style={styles.errorBack}
@@ -360,25 +362,25 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
   const progressLabel = `${data.progress.current}/${data.progress.total}`;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <AppHeader />
 
-      <View style={styles.phaseHeader}>
+      <View style={[styles.phaseHeader, { borderBottomColor: theme.border }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
-          <ChevronLeft size={24} color={colors.gray[600]} />
+          <ChevronLeft size={24} color={isDark ? colors.gray[300] : colors.gray[600]} />
         </Pressable>
         <View style={styles.phaseInfo}>
-          <Text style={styles.phaseName} numberOfLines={1}>
+          <Text style={[styles.phaseName, { color: theme.foreground }]} numberOfLines={1}>
             {data.legislation.title}
           </Text>
           {active && (
-            <Text style={styles.referenceText} numberOfLines={1}>
+            <Text style={[styles.referenceText, { color: theme.mutedForeground }]} numberOfLines={1}>
               Art. {active.article_reference}
               {active.structural_marker ? ` — ${active.structural_marker}` : ''}
             </Text>
           )}
         </View>
-        <Text style={styles.progress}>{progressLabel}</Text>
+        <Text style={[styles.progress, { color: theme.mutedForeground }]}>{progressLabel}</Text>
       </View>
 
       <View style={styles.scrollWrapper}>
@@ -406,14 +408,14 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         )}
 
         {isCompletePhase && (
-          <View style={styles.completionCard}>
+          <View style={[styles.completionCard, { backgroundColor: isDark ? '#0d2818' : colors.green[50], borderColor: isDark ? '#1a472a' : colors.green[100] }]}>
             <Text style={styles.completionEmoji}>🏆</Text>
-            <Text style={styles.completionTitle}>Fase concluída!</Text>
-            <Text style={styles.completionText}>
+            <Text style={[styles.completionTitle, { color: isDark ? '#4ade80' : colors.green[700] }]}>Fase concluída!</Text>
+            <Text style={[styles.completionText, { color: isDark ? colors.gray[400] : colors.gray[600] }]}>
               Você completou todos os blocos desta fase.
             </Text>
             <View style={styles.completionActions}>
-              <GameButton variant="white" size="md" onPress={() => navigation.goBack()}>
+              <GameButton variant="white" size="md" onPress={() => navigation.goBack()} isDark={isDark}>
                 Voltar ao mapa
               </GameButton>
               {data.nextPhaseId != null && (
@@ -464,9 +466,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  errorTitle: { fontSize: 16, fontWeight: '700', color: colors.gray[700], marginBottom: 16 },
+  errorTitle: { fontSize: 16, fontWeight: '700', marginBottom: 16 },
   errorBack: { backgroundColor: colors.purple[500], paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   errorBackText: { color: '#fff', fontWeight: '700' },
 
@@ -476,14 +478,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
     gap: 8,
   },
   backBtn: { padding: 4 },
   phaseInfo: { flex: 1 },
-  phaseName: { fontSize: 14, fontWeight: '700', color: colors.foreground },
-  referenceText: { fontSize: 12, color: colors.mutedForeground },
-  progress: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground },
+  phaseName: { fontSize: 14, fontWeight: '700' },
+  referenceText: { fontSize: 12 },
+  progress: { fontSize: 13, fontWeight: '600' },
 
   scrollWrapper: { flex: 1, position: 'relative' },
   scroll: { flex: 1 },
@@ -509,14 +510,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 24,
     borderRadius: 16,
-    backgroundColor: colors.green[50],
     borderWidth: 1,
-    borderColor: colors.green[100],
     alignItems: 'center',
     gap: 12,
   },
   completionEmoji: { fontSize: 48 },
-  completionTitle: { fontSize: 22, fontWeight: '800', color: colors.green[700] },
-  completionText: { fontSize: 14, color: colors.gray[600], textAlign: 'center' },
+  completionTitle: { fontSize: 22, fontWeight: '800' },
+  completionText: { fontSize: 14, textAlign: 'center' },
   completionActions: { flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' },
 });
