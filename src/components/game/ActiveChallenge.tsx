@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import type { ActiveSegment, SegmentAnswer } from '../../api/play';
 import { colors } from '../../theme/colors';
 
@@ -81,55 +81,68 @@ export function ActiveChallenge({
       style={styles.container}
       onLayout={(e) => onLayout?.(e.nativeEvent.layout.y)}
     >
-      <Text style={styles.body}>
+      {/*
+        Layout do parágrafo: flex-wrap row.
+        Cada palavra é um <Text>, cada lacuna é um <View> pill — assim conseguimos
+        borderRadius + borderBottom + padding reais (RN não renderiza isso de forma
+        confiável em <Text> inline). Espelha o "inline-flex" do web.
+      */}
+      <View style={styles.bodyRow}>
         {segment.structural_marker ? (
-          <Text style={styles.marker}>{segment.structural_marker} </Text>
+          <Text style={[styles.bodyText, styles.marker]}>
+            {segment.structural_marker + ' '}
+          </Text>
         ) : null}
         {tokens.map((t, i) => {
-          if (t.type === 'space') return <Text key={i}>{t.text}</Text>;
-          if (t.type === 'text') return <Text key={i}>{t.text}</Text>;
+          if (t.type === 'space') {
+            return <Text key={i} style={styles.bodyText}>{t.text}</Text>;
+          }
+          if (t.type === 'text') {
+            return <Text key={i} style={styles.bodyText}>{t.text}</Text>;
+          }
 
           // lacuna
           const filled = userSelections[t.gapOrder];
 
           if (!verified && !filled) {
             return (
-              <Text key={i} style={styles.lacunaEmpty}>
-                {' (...) '}
-              </Text>
+              <View key={i} style={styles.lacunaEmpty}>
+                <Text style={styles.lacunaEmptyText}>(...)</Text>
+              </View>
             );
           }
           if (!verified && filled) {
             return (
-              <Text
-                key={i}
-                style={styles.lacunaFilled}
-                onPress={() => onUnselect(t.gapOrder)}
-              >
-                {' '}{filled}
-                <Text style={styles.lacunaRemove}>{' ×'}</Text>
-                {' '}
-              </Text>
+              <Pressable key={i} onPress={() => onUnselect(t.gapOrder)}>
+                <View style={styles.lacunaFilled}>
+                  <Text style={styles.lacunaFilledText}>{filled}</Text>
+                  <Text style={styles.lacunaRemove}>×</Text>
+                </View>
+              </Pressable>
             );
           }
           // verified
           const r = resultByGap.get(t.gapOrder);
           if (r?.is_correct) {
             return (
-              <Text key={i} style={styles.lacunaCorrect}>
-                {' '}{t.correctWord}{' '}
-              </Text>
+              <View key={i} style={styles.lacunaCorrect}>
+                <Text style={styles.lacunaCorrectText}>{t.correctWord}</Text>
+              </View>
             );
           }
           return (
-            <Text key={i}>
-              <Text style={styles.lacunaWrong}>{' '}{r?.user_word ?? ''}{' '}</Text>
-              <Text> </Text>
-              <Text style={styles.lacunaCorrect}>{' '}{t.correctWord}{' '}</Text>
-            </Text>
+            <React.Fragment key={i}>
+              <View style={styles.lacunaWrong}>
+                <Text style={styles.lacunaWrongText}>{r?.user_word ?? ''}</Text>
+              </View>
+              <Text style={styles.bodyText}> </Text>
+              <View style={styles.lacunaCorrect}>
+                <Text style={styles.lacunaCorrectText}>{t.correctWord}</Text>
+              </View>
+            </React.Fragment>
           );
         })}
-      </Text>
+      </View>
 
       {verified && segment.total_gaps > 0 && (
         <View style={styles.resultRow}>
@@ -148,10 +161,19 @@ export function ActiveChallenge({
   );
 }
 
+const PILL_FONT_SIZE = 19;
+
 const styles = StyleSheet.create({
   container: { paddingVertical: 24 },
-  body: {
-    fontSize: 19,
+
+  bodyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    rowGap: 4,
+  },
+  bodyText: {
+    fontSize: PILL_FONT_SIZE,
     lineHeight: 32,
     color: colors.gray[900],
     fontWeight: '500',
@@ -160,42 +182,83 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.gray[950],
   },
+
+  // EMPTY (...) — pill yellow
   lacunaEmpty: {
     backgroundColor: colors.game.lacunaEmptyBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginHorizontal: 1,
+    alignSelf: 'center',
+  },
+  lacunaEmptyText: {
     color: colors.game.lacunaEmptyText,
     fontWeight: '600',
-    paddingHorizontal: 4,
-    borderRadius: 6,
+    fontSize: PILL_FONT_SIZE,
+    lineHeight: 24,
   },
+
+  // FILLED — pill sky com border-bottom
   lacunaFilled: {
-    backgroundColor: colors.blue[50],
-    color: colors.gray[800],
-    fontWeight: '700',
-    paddingHorizontal: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
     borderRadius: 4,
     borderBottomWidth: 2,
-    borderBottomColor: '#7dd3fc',
+    borderBottomColor: '#38bdf8',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginHorizontal: 1,
+    alignSelf: 'center',
+  },
+  lacunaFilledText: {
+    color: '#1e293b',
+    fontWeight: '700',
+    fontSize: PILL_FONT_SIZE,
+    lineHeight: 24,
   },
   lacunaRemove: {
-    color: colors.gray[400],
+    color: '#94a3b8',
     fontWeight: '700',
     fontSize: 14,
+    marginLeft: 6,
+    lineHeight: 24,
   },
+
+  // CORRECT (verified)
   lacunaCorrect: {
     backgroundColor: colors.game.lacunaCorrectBg,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+    marginHorizontal: 1,
+    alignSelf: 'center',
+  },
+  lacunaCorrectText: {
     color: colors.green[700],
     fontWeight: '700',
-    paddingHorizontal: 10,
-    borderRadius: 999,
+    fontSize: PILL_FONT_SIZE,
+    lineHeight: 24,
   },
+
+  // WRONG (verified)
   lacunaWrong: {
     backgroundColor: colors.game.lacunaWrongBg,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+    marginHorizontal: 1,
+    alignSelf: 'center',
+  },
+  lacunaWrongText: {
     color: colors.red[700],
     fontWeight: '700',
-    paddingHorizontal: 10,
-    borderRadius: 999,
+    fontSize: PILL_FONT_SIZE,
+    lineHeight: 24,
     textDecorationLine: 'line-through',
   },
+
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',

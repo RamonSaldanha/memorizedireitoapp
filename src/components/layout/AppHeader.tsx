@@ -57,9 +57,6 @@ export function AppHeader() {
           <Gem size={22} color={colors.blue[500]} />
         </Pressable>
       )}
-
-      {/* Avatar */}
-      <Avatar name={name ?? ''} uri={avatar ?? undefined} size={36} style={{ borderWidth: 2, borderColor: isDark ? colors.gray[700] : colors.gray[200] }} />
     </View>
   );
 }
@@ -68,7 +65,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     gap: 8,
     paddingTop: 10,
     paddingBottom: 10,

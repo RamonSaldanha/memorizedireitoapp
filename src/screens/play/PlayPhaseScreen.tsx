@@ -24,6 +24,7 @@ import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
 import { XpGainPopup } from '../../components/game/XpGainPopup';
+import { LostLifeToast } from '../../components/game/LostLifeToast';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useSuccessSound } from '../../hooks/useSuccessSound';
 import { colors } from '../../theme/colors';
@@ -65,11 +66,16 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
   const [xpKey, setXpKey] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [lostLifeMessage, setLostLifeMessage] = useState<string | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
   const activeYRef = useRef<number>(0);
   const oldContentHeightRef = useRef<number | null>(null);
+  const oldScrollYRef = useRef<number>(0);
   const initialScrollDoneRef = useRef(false);
+  // Flag explícita para scroll suave somente quando o usuário avança de segmento
+  // (NÃO deve disparar quando o ativo é re-laid-out por causa do prepend infinite-up)
+  const pendingAdvanceScrollRef = useRef(false);
 
   const { ConfettiView, fire: fireConfetti } = useConfetti();
   const { play: playWinSound } = useSuccessSound();
@@ -207,6 +213,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         });
 
         if (r.next_segment) {
+          // Sinaliza para handleActiveLayout fazer scroll suave UMA vez quando
+          // o novo ativo for laid-out
+          pendingAdvanceScrollRef.current = true;
           setActive(r.next_segment);
         } else {
           setActive(null);
@@ -216,7 +225,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         // Invalida o mapa para refletir progresso lá
         queryClient.invalidateQueries({ queryKey: ['play-map'] });
       } else {
-        showToast(`Vida perdida! Você precisa acertar pelo menos 70%. Acertou ${correctCount} de ${answers.length}.`);
+        setLostLifeMessage(
+          `Você precisa acertar pelo menos 70%. Acertou ${correctCount} de ${answers.length}.`,
+        );
         // Reset depois de breve display do erro
         await new Promise((resolve) => setTimeout(resolve, 1200));
         setUserSelections({});
@@ -261,8 +272,9 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const y = e.nativeEvent.contentOffset.y;
       if (y < 60 && hasMoreAbove && !isLoadingMore && completed.length > 0) {
-        // Snapshot antes do prepend para preservar posição visual
+        // Snapshot da altura e posição antes do prepend para preservar posição visual
         oldContentHeightRef.current = e.nativeEvent.contentSize.height;
+        oldScrollYRef.current = y;
         loadMoreAbove();
       }
     },
@@ -271,20 +283,25 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
   const handleContentSizeChange = useCallback(
     (_w: number, newHeight: number) => {
-      // Após prepend de segmentos, ajustar scrollTop para manter posição visual
+      // Após prepend: ajusta scrollY para oldScrollY + delta, mantendo a posição visual
       if (oldContentHeightRef.current != null && oldContentHeightRef.current > 0) {
         const delta = newHeight - oldContentHeightRef.current;
         if (delta > 0) {
-          scrollRef.current?.scrollTo({ y: delta, animated: false });
+          const targetY = oldScrollYRef.current + delta;
+          scrollRef.current?.scrollTo({ y: targetY, animated: false });
         }
         oldContentHeightRef.current = null;
+        oldScrollYRef.current = 0;
+        return;
       }
 
       // Scroll inicial para o segmento ativo (apenas uma vez por segmento)
       if (!initialScrollDoneRef.current && active && activeYRef.current > 0) {
-        const targetY = Math.max(0, activeYRef.current - 80);
-        scrollRef.current?.scrollTo({ y: targetY, animated: false });
-        initialScrollDoneRef.current = true;
+        // requestAnimationFrame garante que o scroll acontece após o layout estabilizar
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ y: activeYRef.current, animated: false });
+          initialScrollDoneRef.current = true;
+        });
       }
     },
     [active?.uuid],
@@ -292,14 +309,28 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
   const handleActiveLayout = useCallback((y: number) => {
     activeYRef.current = y;
-    if (!initialScrollDoneRef.current) {
-      const targetY = Math.max(0, y - 80);
-      scrollRef.current?.scrollTo({ y: targetY, animated: false });
-      initialScrollDoneRef.current = true;
-    } else {
-      // Após avançar para próximo segmento, scroll suave
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: true });
+
+    // Avanço explícito para o próximo segmento: scroll suave UMA vez
+    if (pendingAdvanceScrollRef.current) {
+      pendingAdvanceScrollRef.current = false;
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y, animated: true });
+      });
+      return;
     }
+
+    // Scroll inicial (primeira montagem da fase): instantâneo, UMA vez
+    if (!initialScrollDoneRef.current) {
+      requestAnimationFrame(() => {
+        if (initialScrollDoneRef.current) return;
+        scrollRef.current?.scrollTo({ y, animated: false });
+        initialScrollDoneRef.current = true;
+      });
+      return;
+    }
+
+    // Re-layout do ativo (ex: prepend de completed acima) — NÃO scroll.
+    // O preserve de posição é tratado em handleContentSizeChange.
   }, []);
 
   /* ===== Render ===== */
@@ -350,20 +381,15 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         <Text style={styles.progress}>{progressLabel}</Text>
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        scrollEventThrottle={32}
-        onScroll={handleScroll}
-        onContentSizeChange={handleContentSizeChange}
-      >
-        {isLoadingMore && (
-          <View style={styles.loadingMore}>
-            <ActivityIndicator color={colors.purple[500]} />
-          </View>
-        )}
-
+      <View style={styles.scrollWrapper}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          scrollEventThrottle={32}
+          onScroll={handleScroll}
+          onContentSizeChange={handleContentSizeChange}
+        >
         {completed.map((seg) => (
           <CompletedSegmentView key={seg.uuid} segment={seg} />
         ))}
@@ -402,7 +428,14 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
             </View>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+
+        {isLoadingMore && (
+          <View pointerEvents="none" style={styles.spinnerOverlay}>
+            <ActivityIndicator color={colors.purple[500]} />
+          </View>
+        )}
+      </View>
 
       {active && (
         <PhaseControls
@@ -421,6 +454,11 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
       <XpGainPopup key={xpKey} amount={xpAmount} onDone={() => setXpAmount(null)} />
       <ConfettiView />
+      <LostLifeToast
+        visible={lostLifeMessage !== null}
+        message={lostLifeMessage ?? ''}
+        onHide={() => setLostLifeMessage(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -447,6 +485,7 @@ const styles = StyleSheet.create({
   referenceText: { fontSize: 12, color: colors.mutedForeground },
   progress: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground },
 
+  scrollWrapper: { flex: 1, position: 'relative' },
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 16,
@@ -457,7 +496,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
-  loadingMore: { paddingVertical: 16, alignItems: 'center' },
+  spinnerOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
 
   completionCard: {
     marginTop: 24,

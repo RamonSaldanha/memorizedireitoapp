@@ -55,11 +55,11 @@ export function GameButton({
       disabled={disabled}
       style={fullWidth ? { width: '100%' } : undefined}
     >
-      {/* Sombra 3D: View estática abaixo do botão */}
+      {/* Sombra 3D: View estática abaixo do botão (box-shadow: 0 4px 0 color) */}
       <View style={[
         styles.shadow,
         {
-          backgroundColor: v.shadow,
+          backgroundColor: disabled ? colors.gray[600] : v.shadow,
           paddingHorizontal: s.paddingH,
           paddingVertical: s.paddingV,
         },
@@ -70,17 +70,16 @@ export function GameButton({
       <Animated.View style={[
         styles.btn,
         {
-          backgroundColor: v.bg,
-          borderColor: v.border,
+          backgroundColor: disabled ? colors.gray[400] : v.bg,
+          borderColor: disabled ? colors.gray[600] : v.border,
           paddingHorizontal: s.paddingH,
           paddingVertical: s.paddingV,
-          opacity: disabled ? 0.5 : 1,
           transform: [{ translateY }],
         },
         style,
       ]}>
         {typeof children === 'string' ? (
-          <Text style={[styles.text, { color: v.text, fontSize: s.fontSize }, textStyle]}>
+          <Text style={[styles.text, { color: disabled ? '#ffffff' : v.text, fontSize: s.fontSize }, textStyle]}>
             {children}
           </Text>
         ) : (
@@ -101,12 +100,12 @@ const styles = StyleSheet.create({
   },
   btn: {
     borderRadius: 8,
-    borderWidth: 1.5,
+    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 4, // espaço para a sombra aparecer
+    marginBottom: 4, // box-shadow: 0 4px 0 color (espaço sólido inferior)
   },
   text: {
     fontWeight: '700',
