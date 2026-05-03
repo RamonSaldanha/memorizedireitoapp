@@ -84,6 +84,12 @@ export function ActiveChallenge({
   const resultTextColor = isDark ? colors.gray[300] : colors.gray[700];
   const resultPctColor = isDark ? colors.gray[500] : colors.gray[400];
 
+  // Badges verificados em dark mode: fundos sólidos + texto preto
+  const correctBg = isDark ? '#166534' : colors.game.lacunaCorrectBg;
+  const correctText = isDark ? '#000000' : colors.green[700];
+  const wrongBg = isDark ? '#991b1b' : colors.game.lacunaWrongBg;
+  const wrongText = isDark ? '#000000' : colors.red[700];
+
   return (
     <View
       style={styles.container}
@@ -127,19 +133,19 @@ export function ActiveChallenge({
           const r = resultByGap.get(t.gapOrder);
           if (r?.is_correct) {
             return (
-              <View key={i} style={styles.lacunaCorrect}>
-                <Text style={styles.lacunaCorrectText}>{t.correctWord}</Text>
+              <View key={i} style={[styles.lacunaCorrect, { backgroundColor: correctBg }]}>
+                <Text style={[styles.lacunaCorrectText, { color: correctText }]}>{t.correctWord}</Text>
               </View>
             );
           }
           return (
             <React.Fragment key={i}>
-              <View style={styles.lacunaWrong}>
-                <Text style={styles.lacunaWrongText}>{r?.user_word ?? ''}</Text>
+              <View style={[styles.lacunaWrong, { backgroundColor: wrongBg }]}>
+                <Text style={[styles.lacunaWrongText, { color: wrongText }]}>{r?.user_word ?? ''}</Text>
               </View>
               <Text style={[styles.bodyText, { color: bodyTextColor }]}> </Text>
-              <View style={styles.lacunaCorrect}>
-                <Text style={styles.lacunaCorrectText}>{t.correctWord}</Text>
+              <View style={[styles.lacunaCorrect, { backgroundColor: correctBg }]}>
+                <Text style={[styles.lacunaCorrectText, { color: correctText }]}>{t.correctWord}</Text>
               </View>
             </React.Fragment>
           );
@@ -172,11 +178,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    rowGap: 4,
   },
   bodyText: {
     fontSize: PILL_FONT_SIZE,
-    lineHeight: 32,
+    lineHeight: 28,
     fontWeight: '500',
   },
   marker: {
@@ -194,7 +199,7 @@ const styles = StyleSheet.create({
   lacunaEmptyText: {
     fontWeight: '600',
     fontSize: PILL_FONT_SIZE,
-    lineHeight: 24,
+    lineHeight: 28,
   },
 
   // FILLED — pill sky com border-bottom
@@ -206,54 +211,53 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#38bdf8',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     marginHorizontal: 1,
     alignSelf: 'center',
+    minHeight: 28,
   },
   lacunaFilledText: {
     color: '#1e293b',
     fontWeight: '700',
     fontSize: PILL_FONT_SIZE,
-    lineHeight: 24,
+    lineHeight: 28,
   },
   lacunaRemove: {
     color: '#94a3b8',
     fontWeight: '700',
     fontSize: 14,
     marginLeft: 6,
-    lineHeight: 24,
+    lineHeight: 28,
   },
 
   // CORRECT (verified)
   lacunaCorrect: {
-    backgroundColor: colors.game.lacunaCorrectBg,
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 999,
     marginHorizontal: 1,
     alignSelf: 'center',
+    minHeight: 28,
   },
   lacunaCorrectText: {
-    color: colors.green[700],
     fontWeight: '700',
     fontSize: PILL_FONT_SIZE,
-    lineHeight: 24,
+    lineHeight: 28,
   },
 
   // WRONG (verified)
   lacunaWrong: {
-    backgroundColor: colors.game.lacunaWrongBg,
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 999,
     marginHorizontal: 1,
     alignSelf: 'center',
+    minHeight: 28,
   },
   lacunaWrongText: {
-    color: colors.red[700],
     fontWeight: '700',
     fontSize: PILL_FONT_SIZE,
-    lineHeight: 24,
+    lineHeight: 28,
     textDecorationLine: 'line-through',
   },
 

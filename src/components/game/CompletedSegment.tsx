@@ -58,6 +58,12 @@ export function CompletedSegmentView({ segment }: { segment: CompletedSegmentDat
   const bodyColor = isDark ? colors.gray[500] : colors.gray[400];
   const markerColor = isDark ? colors.gray[400] : colors.gray[500];
 
+  // Em dark mode: badges sólidos com texto preto para legibilidade
+  const correctBg = isDark ? '#166534' : colors.game.lacunaCorrectBg;
+  const correctColor = isDark ? '#000000' : colors.green[700];
+  const wrongBg = isDark ? '#991b1b' : 'rgba(254,226,226,0.5)';
+  const wrongColor = isDark ? '#000000' : colors.red[400];
+
   return (
     <View style={styles.container}>
       <Text style={[styles.bodyText, { color: bodyColor }]}>
@@ -70,14 +76,14 @@ export function CompletedSegmentView({ segment }: { segment: CompletedSegmentDat
           if (t.type === 'answer') {
             if (t.answer.is_correct) {
               return (
-                <Text key={i} style={styles.correct}>{t.text}</Text>
+                <Text key={i} style={[styles.correct, { backgroundColor: correctBg, color: correctColor }]}>{t.text}</Text>
               );
             }
             return (
               <Text key={i}>
-                <Text style={styles.wrong}>{t.answer.user_word}</Text>
+                <Text style={[styles.wrong, { backgroundColor: wrongBg, color: wrongColor }]}>{t.answer.user_word}</Text>
                 <Text> </Text>
-                <Text style={styles.correctionInline}>{t.answer.correct_word}</Text>
+                <Text style={[styles.correctionInline, { backgroundColor: correctBg, color: correctColor }]}>{t.answer.correct_word}</Text>
               </Text>
             );
           }
@@ -102,23 +108,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   correct: {
-    backgroundColor: colors.game.lacunaCorrectBg,
-    color: colors.green[700],
     fontWeight: '700',
     paddingHorizontal: 8,
     borderRadius: 999,
   },
   wrong: {
-    backgroundColor: 'rgba(254,226,226,0.5)',
-    color: colors.red[400],
     textDecorationLine: 'line-through',
     paddingHorizontal: 8,
     borderRadius: 999,
     fontSize: 16,
   },
   correctionInline: {
-    backgroundColor: colors.game.lacunaCorrectBg,
-    color: colors.green[700],
     fontWeight: '700',
     paddingHorizontal: 8,
     borderRadius: 999,
