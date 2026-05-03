@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { View, StyleSheet, Pressable, Animated } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import {
   Check, Lock, BookOpen, FileText, Bookmark, Star, RefreshCw, CheckCircle,
@@ -40,6 +40,15 @@ export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
   const outerSize = SIZES[sizeKey];
   const isClickable = !phase.is_blocked;
 
+  const pressAnim = useRef(new Animated.Value(0)).current;
+  const pressIn = useCallback(() => {
+    if (!isClickable) return;
+    Animated.timing(pressAnim, { toValue: 5, duration: 80, useNativeDriver: true }).start();
+  }, [isClickable]);
+  const pressOut = useCallback(() => {
+    Animated.timing(pressAnim, { toValue: 0, duration: 80, useNativeDriver: true }).start();
+  }, []);
+
   // Para fase atual: anel de progresso
   const progressRadius = 44;
   const progressCircumference = 2 * Math.PI * progressRadius;
@@ -55,7 +64,7 @@ export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
     : getPhaseIcon(phase.id);
 
   return (
-    <Pressable onPress={onPress} disabled={!isClickable} style={styles.pressable}>
+    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={!isClickable} style={styles.pressable}>
       <View style={[styles.container, { width: outerSize, height: outerSize }]}>
         {/* === FASE ATUAL === */}
         {phase.is_current && (
@@ -104,13 +113,14 @@ export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
             />
 
             {/* Círculo azul interno */}
-            <View
+            <Animated.View
               style={[
                 styles.currentInner,
                 {
                   width: outerSize * 0.68,
                   height: outerSize * 0.68,
                   borderRadius: (outerSize * 0.68) / 2,
+                  transform: [{ translateY: pressAnim }],
                 },
               ]}
             >
@@ -118,7 +128,7 @@ export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
               <Svg width={26} height={26} viewBox="0 0 24 24" style={{ marginLeft: 2 }}>
                 <Path d="M8 5v14l11-7z" fill="#ffffff" />
               </Svg>
-            </View>
+            </Animated.View>
           </>
         )}
 
@@ -140,10 +150,10 @@ export function PhaseCircle({ phase, onPress, isDark = false }: Props) {
         {phase.is_blocked && (
           <>
             {/* Base 3D */}
-            <View style={[styles.base3d, { backgroundColor: colors.gray[400], top: 5 }]} />
+            <View style={[styles.base3d, { backgroundColor: isDark ? '#404040' : colors.gray[400], top: 5 }]} />
             {/* Círculo principal */}
-            <View style={[styles.circle, { backgroundColor: colors.gray[300] }]}>
-              <Lock size={22} color={colors.gray[500]} />
+            <View style={[styles.circle, { backgroundColor: isDark ? '#525252' : colors.gray[300] }]}>
+              <Lock size={22} color={isDark ? '#a3a3a3' : colors.gray[500]} />
             </View>
           </>
         )}

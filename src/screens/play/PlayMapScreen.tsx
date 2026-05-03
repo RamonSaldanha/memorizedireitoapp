@@ -323,7 +323,7 @@ export function PlayMapScreen() {
                     styles.legislationWrapper,
                     {
                       top: positions[i].y - (VERTICAL_SPACING * scale) / 2 - 10,
-                      left: positions[i].x,
+                      left: trailWidth / 2 - 140,
                     },
                   ]}
                 >
@@ -391,13 +391,13 @@ const styles = StyleSheet.create({
 
   mapContainer: {
     position: 'relative',
+    overflow: 'visible',
   },
 
   /* ---------- Legislation Header ---------- */
   legislationWrapper: {
     position: 'absolute',
     width: 280,
-    marginLeft: -140,
     zIndex: 5,
   },
   legislationRow: {
