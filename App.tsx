@@ -10,7 +10,6 @@ import { authApi } from './src/api/auth';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAppearance } from './src/hooks/useAppearance';
 import { usePreferencesStore } from './src/stores/preferencesStore';
-import { Logo } from './src/components/Logo';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -69,11 +68,10 @@ function AppBootstrap() {
     return (
       <View style={splashStyles.container}>
         <Image
-          source={require('./assets/icon.jpg')}
+          source={require('./assets/splash-icon.jpg')}
           style={splashStyles.icon}
           resizeMode="contain"
         />
-        <Logo width={240} />
       </View>
     );
   }
@@ -86,7 +84,7 @@ const splashStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F6C401',
     gap: 32,
   },
   icon: {
