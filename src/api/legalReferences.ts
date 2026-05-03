@@ -3,9 +3,10 @@ import { apiClient } from './client';
 export type LegalReference = {
   id: number;
   uuid: string;
-  name: string;
-  description: string | null;
-  difficulty_level: number;
+  title: string;
+  total_blocks: number;
+  completed_blocks: number;
+  percentage: number;
   is_selected: boolean;
 };
 
