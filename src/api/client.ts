@@ -8,6 +8,9 @@ export const API_BASE_URL = __DEV__
   ? 'https://memorizedireito.com/api/v1'  // Android emulator → localhost da máquina
   : 'https://memorizedireito.com/api/v1';
 
+export const WEB_BASE_URL = 'https://memorizedireito.com';
+export const WEB_SUBSCRIPTION_URL = `${WEB_BASE_URL}/subscription`;
+
 export const TOKEN_KEY = 'sanctum_token';
 
 export const apiClient = axios.create({

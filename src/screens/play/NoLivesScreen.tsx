@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,21 @@ import {
   Platform,
   Alert,
   ToastAndroid,
+  AppState,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Heart, Gem } from 'lucide-react-native';
 import { playApi } from '../../api/play';
+import { authApi } from '../../api/auth';
+import { WEB_SUBSCRIPTION_URL } from '../../api/client';
 import { useUserStore } from '../../stores/userStore';
+import { useAuthStore } from '../../stores/authStore';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { GameButton } from '../../components/ui/GameButton';
+import { Toast } from '../../components/ui/Toast';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
@@ -89,10 +95,80 @@ export function NoLivesScreen({ navigation }: Props) {
   const webViewRef = useRef<WebView | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [toast, setToast] = useState<{ title: string; variant: 'success' | 'error' | 'default' } | null>(null);
+
+  const log = (msg: string) => console.log('[SUB]', new Date().toLocaleTimeString(), msg);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     if (event.nativeEvent.data === 'ready') {
       setIsReady(true);
+    }
+  };
+
+  const pendingSyncRef = useRef(false);
+
+  const syncStatus = async () => {
+    log('sync: buscando /me…');
+    setIsSyncing(true);
+    try {
+      const res = await authApi.me();
+      useAuthStore.getState().setUser(res.data);
+      updateFromApi(res.data);
+      queryClient.invalidateQueries({ queryKey: ['play-map'] });
+      queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+      const ativo = res.data.has_infinite_lives;
+      log(`sync OK: premium=${ativo} lives=${res.data.lives}`);
+      if (ativo) {
+        navigation.navigate('PlayMap');
+      } else {
+        setToast({ title: 'Sem assinatura ativa', variant: 'default' });
+      }
+    } catch (e: any) {
+      log(`sync ERRO: ${e?.message ?? 'desconhecido'}`);
+      setToast({ title: 'Não foi possível atualizar o status', variant: 'error' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Quando o app volta ao primeiro plano após abrir o site de assinatura,
+  // re-sincroniza o status. Só dispara numa transição real background → active
+  // (evita um 'active' espúrio que o Android emite ao abrir o Custom Tab).
+  const appStateRef = useRef(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      const voltouAoApp = /inactive|background/.test(prev) && next === 'active';
+      log(`AppState ${prev}→${next} pending=${pendingSyncRef.current} voltou=${voltouAoApp}`);
+      if (voltouAoApp && pendingSyncRef.current) {
+        pendingSyncRef.current = false;
+        log('AppState disparou sync');
+        syncStatus();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const handleOpenSubscription = async () => {
+    log('clicou Premium → abrindo navegador');
+    pendingSyncRef.current = true;
+    let result: WebBrowser.WebBrowserResult | undefined;
+    try {
+      result = await WebBrowser.openBrowserAsync(WEB_SUBSCRIPTION_URL);
+    } catch (e: any) {
+      pendingSyncRef.current = false;
+      log(`ERRO ao abrir navegador: ${e?.message ?? 'desconhecido'}`);
+      setToast({ title: 'Não foi possível abrir a página de assinatura', variant: 'error' });
+      return;
+    }
+    log(`navegador retornou (Promise): ${JSON.stringify(result)} pending=${pendingSyncRef.current}`);
+    // 'opened' (Android): o app não sabe quando a aba fecha → deixa o AppState cuidar.
+    if (result?.type !== 'opened' && pendingSyncRef.current) {
+      pendingSyncRef.current = false;
+      log('fallback Promise → sync');
+      await syncStatus();
     }
   };
 
@@ -162,13 +238,30 @@ export function NoLivesScreen({ navigation }: Props) {
             variant="blue"
             size="md"
             fullWidth
-            onPress={() => navigation.navigate('Subscription')}
+            onPress={handleOpenSubscription}
           >
             <Gem size={18} color="#ffffff" />
             <Text style={styles.premiumLabel}>Assinar Premium</Text>
           </GameButton>
         </View>
       </View>
+
+      {/* Overlay de sincronização ao voltar do navegador */}
+      {isSyncing && (
+        <View style={styles.syncOverlay}>
+          <View style={[styles.syncCard, { backgroundColor: theme.card }]}>
+            <ActivityIndicator size="large" color={colors.purple[600]} />
+            <Text style={[styles.syncText, { color: theme.foreground }]}>Atualizando…</Text>
+          </View>
+        </View>
+      )}
+
+      <Toast
+        visible={!!toast}
+        title={toast?.title ?? ''}
+        variant={toast?.variant}
+        onHide={() => setToast(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -214,4 +307,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  syncOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  syncCard: {
+    paddingVertical: 24,
+    paddingHorizontal: 36,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 12,
+  },
+  syncText: { fontSize: 15, fontWeight: '600' },
 });

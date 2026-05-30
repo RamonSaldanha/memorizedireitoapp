@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   TextInput,
   Switch,
   StatusBar,
+  ActivityIndicator,
+  AppState,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,15 +23,17 @@ import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
 import { Avatar } from '../../components/ui/Avatar';
 import { GameButton } from '../../components/ui/GameButton';
+import { Toast } from '../../components/ui/Toast';
 import { useAppearance } from '../../hooks/useAppearance';
 import { colors } from '../../theme/colors';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePreferencesStore } from '../../stores/preferencesStore';
+import { authApi } from '../../api/auth';
+import { WEB_SUBSCRIPTION_URL } from '../../api/client';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   ChangePassword: undefined;
-  Subscription: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -44,6 +49,7 @@ export function ProfileScreen() {
   const [editField, setEditField] = useState<'name' | 'email' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: (data: { name?: string; email?: string }) =>
@@ -85,6 +91,74 @@ export function ProfileScreen() {
     setIsLogoutModalVisible(false);
     await logout();
     queryClient.clear();
+  };
+
+  const pendingSyncRef = useRef(false);
+  const [toast, setToast] = useState<{ title: string; variant: 'success' | 'error' | 'default' } | null>(null);
+
+  const log = (msg: string) => console.log('[SUB]', new Date().toLocaleTimeString(), msg);
+
+  const syncStatus = async () => {
+    log('sync: buscando /me…');
+    setIsSyncing(true);
+    try {
+      const res = await authApi.me();
+      setUser(res.data);
+      useUserStore.getState().updateFromApi(res.data);
+      const ativo = res.data.has_infinite_lives;
+      log(`sync OK: premium=${ativo} lives=${res.data.lives}`);
+      setToast({
+        title: ativo ? 'Sua assinatura está ativa' : 'Sem assinatura ativa',
+        variant: 'default',
+      });
+    } catch (e: any) {
+      log(`sync ERRO: ${e?.message ?? 'desconhecido'}`);
+      setToast({ title: 'Não foi possível atualizar o status', variant: 'error' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Quando o app volta ao primeiro plano após abrir o site de assinatura,
+  // re-sincroniza o status. Só dispara numa transição real background → active
+  // (evita um 'active' espúrio que o Android emite ao abrir o Custom Tab).
+  const appStateRef = useRef(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      const voltouAoApp = /inactive|background/.test(prev) && next === 'active';
+      log(`AppState ${prev}→${next} pending=${pendingSyncRef.current} voltou=${voltouAoApp}`);
+      if (voltouAoApp && pendingSyncRef.current) {
+        pendingSyncRef.current = false;
+        log('AppState disparou sync');
+        syncStatus();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const handleOpenSubscription = async () => {
+    log('clicou Premium → abrindo navegador');
+    pendingSyncRef.current = true;
+    let result: WebBrowser.WebBrowserResult | undefined;
+    try {
+      result = await WebBrowser.openBrowserAsync(WEB_SUBSCRIPTION_URL);
+    } catch (e: any) {
+      pendingSyncRef.current = false;
+      log(`ERRO ao abrir navegador: ${e?.message ?? 'desconhecido'}`);
+      setToast({ title: 'Não foi possível abrir a página de assinatura', variant: 'error' });
+      return;
+    }
+    log(`navegador retornou (Promise): ${JSON.stringify(result)} pending=${pendingSyncRef.current}`);
+    // 'opened': no Android a aba abre num task separado e o app não sabe quando ela fecha.
+    // Mantemos pending=true e deixamos o AppState (background → active) disparar o sync.
+    // Em 'dismiss'/'cancel' (iOS, ou quando a Promise reflete o fechamento) sincronizamos aqui.
+    if (result?.type !== 'opened' && pendingSyncRef.current) {
+      pendingSyncRef.current = false;
+      log('fallback Promise → sync');
+      await syncStatus();
+    }
   };
 
   const appearanceOptions: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ElementType }[] = [
@@ -137,7 +211,7 @@ export function ProfileScreen() {
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.gray[500] }]}>ASSINATURA</Text>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <Pressable style={styles.row} onPress={() => navigation.navigate('Subscription')}>
+          <Pressable style={styles.row} onPress={handleOpenSubscription}>
             <Gem size={20} color={colors.blue[500]} />
             <View style={styles.rowContent}>
               <Text style={[styles.rowLabel, { color: theme.foreground }]}>Premium</Text>
@@ -293,6 +367,23 @@ export function ProfileScreen() {
         </View>
       </Modal>
     </ScrollView>
+
+      {/* Overlay de sincronização ao voltar do navegador */}
+      {isSyncing && (
+        <View style={styles.syncOverlay}>
+          <View style={[styles.syncCard, { backgroundColor: theme.card }]}>
+            <ActivityIndicator size="large" color={colors.purple[600]} />
+            <Text style={[styles.syncText, { color: theme.foreground }]}>Atualizando…</Text>
+          </View>
+        </View>
+      )}
+
+      <Toast
+        visible={!!toast}
+        title={toast?.title ?? ''}
+        variant={toast?.variant}
+        onHide={() => setToast(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -362,4 +453,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
   },
+  syncOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  syncCard: {
+    paddingVertical: 24,
+    paddingHorizontal: 36,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 12,
+  },
+  syncText: { fontSize: 15, fontWeight: '600' },
 });
