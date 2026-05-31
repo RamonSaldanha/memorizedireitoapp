@@ -9,6 +9,7 @@ import { Flame, Trophy, Share2, ArrowLeft, Check, ChevronLeft, ChevronRight } fr
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { streakApi, StreakMonthDay } from '../api/streak';
+import { Logo } from '../components/Logo';
 import { useUserStore } from '../stores/userStore';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
@@ -240,7 +241,7 @@ export function OfensivaScreen() {
       {data && (
         <View ref={cardRef} collapsable={false} style={styles.shareCard}>
           <View style={styles.shareHeader}>
-            <Text style={styles.shareBrand}>MEMORIZE DIREITO</Text>
+            <Logo width={150} />
           </View>
 
           <View style={styles.shareBody}>
@@ -348,8 +349,10 @@ const styles = StyleSheet.create({
     position: 'absolute', top: -10000, left: 0, width: 360, height: 640,
     backgroundColor: '#ffffff', overflow: 'hidden',
   },
-  shareHeader: { backgroundColor: colors.orange[500], paddingVertical: 18, alignItems: 'center' },
-  shareBrand: { color: '#ffffff', fontSize: 13, fontWeight: '800', letterSpacing: 2 },
+  shareHeader: {
+    backgroundColor: '#ffffff', paddingVertical: 16, alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: colors.gray[200],
+  },
   shareBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 22 },
   shareNum: { color: colors.orange[500], fontSize: 76, fontWeight: '900', lineHeight: 80 },
   shareLabel: { color: colors.gray[700], fontSize: 17, fontWeight: '800', marginTop: 2 },
