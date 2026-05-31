@@ -101,8 +101,8 @@ export function OfensivaScreen() {
         <ActivityIndicator style={styles.loader} color={colors.orange[500]} />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          {/* Card de resumo (compartilhável) */}
-          <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.card, borderColor: isDark ? colors.gray[700] : colors.orange[100] }]}>
+          {/* Card de resumo (exibição) */}
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: isDark ? colors.gray[700] : colors.orange[100] }]}>
             <Text style={[styles.headline, { color: theme.foreground }]}>
               <Text style={{ color: colors.orange[500] }}>{current} {dayLabel(current)} </Text>
               seguidos de estudos
@@ -235,6 +235,64 @@ export function OfensivaScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* Card vertical 9:16 para stories — fora da tela, só p/ captura */}
+      {data && (
+        <View ref={cardRef} collapsable={false} style={styles.shareCard}>
+          <View style={styles.shareHeader}>
+            <Text style={styles.shareBrand}>MEMORIZE DIREITO</Text>
+          </View>
+
+          <View style={styles.shareBody}>
+            <Flame size={88} color={colors.orange[500]} fill={colors.orange[500]} />
+            <View style={{ alignItems: 'center' }}>
+              <Text style={styles.shareNum}>{current}</Text>
+              <Text style={styles.shareLabel}>{dayLabel(current)} seguidos de estudos</Text>
+            </View>
+
+            <View style={styles.weekRow}>
+              {data.week.map((d) => (
+                <View
+                  key={`s-${d.date}`}
+                  style={[styles.weekPill, { backgroundColor: d.studied ? colors.orange[100] : colors.gray[100] }]}
+                >
+                  <Text style={[styles.weekday, { color: d.studied ? colors.orange[600] : colors.gray[400] }]}>{d.weekday}</Text>
+                  <View
+                    style={[
+                      styles.dayBadge,
+                      d.studied ? { backgroundColor: colors.yellow[400] } : { borderWidth: 2, borderColor: colors.gray[300] },
+                    ]}
+                  >
+                    {d.studied && <Check size={14} color="#ffffff" strokeWidth={3} />}
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={[styles.statBox, { backgroundColor: colors.orange[50] }]}>
+                <Text style={[styles.statLabel, { color: colors.gray[500] }]}>SEQUÊNCIA ATUAL</Text>
+                <View style={styles.statValueRow}>
+                  <Flame size={18} color={colors.orange[500]} fill={colors.orange[500]} />
+                  <Text style={[styles.statValue, { color: colors.orange[500] }]}>{current} {dayLabel(current)}</Text>
+                </View>
+              </View>
+              <View style={[styles.statBox, { backgroundColor: colors.orange[50] }]}>
+                <Text style={[styles.statLabel, { color: colors.gray[500] }]}>SEU RECORDE</Text>
+                <View style={styles.statValueRow}>
+                  <Trophy size={18} color={colors.orange[600]} />
+                  <Text style={[styles.statValue, { color: colors.orange[600] }]}>{longest} {dayLabel(longest)}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.shareFooter}>
+            <Text style={styles.shareSubtitle}>{subtitleText(current, playedToday)}</Text>
+            <Text style={styles.shareUrl}>memorizedireito.com</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -284,4 +342,18 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, marginTop: 10 },
   legendText: { fontSize: 11 },
   legendSwatch: { width: 12, height: 12, borderRadius: 3 },
+
+  // Card vertical 9:16 p/ stories (renderizado fora da tela)
+  shareCard: {
+    position: 'absolute', top: -10000, left: 0, width: 360, height: 640,
+    backgroundColor: '#ffffff', overflow: 'hidden',
+  },
+  shareHeader: { backgroundColor: colors.orange[500], paddingVertical: 18, alignItems: 'center' },
+  shareBrand: { color: '#ffffff', fontSize: 13, fontWeight: '800', letterSpacing: 2 },
+  shareBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 22 },
+  shareNum: { color: colors.orange[500], fontSize: 76, fontWeight: '900', lineHeight: 80 },
+  shareLabel: { color: colors.gray[700], fontSize: 17, fontWeight: '800', marginTop: 2 },
+  shareFooter: { paddingHorizontal: 28, paddingVertical: 20, alignItems: 'center', gap: 2 },
+  shareSubtitle: { color: colors.gray[500], fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  shareUrl: { color: colors.orange[400], fontSize: 12, fontWeight: '600' },
 });
