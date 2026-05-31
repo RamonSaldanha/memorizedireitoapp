@@ -1,7 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { DisciplineBadge } from '../ui/DisciplineBadge';
 import type { DisciplineLevelUp } from '../../api/play';
+
+const { width } = Dimensions.get('window');
 
 type Props = {
   levelUp: DisciplineLevelUp | null;
@@ -10,9 +13,10 @@ type Props = {
 };
 
 /**
- * Overlay auto-dismiss de "VOCÊ SUBIU DE NÍVEL!" exibido quando o usuário cruza
+ * Overlay auto-dismiss de "Você subiu de nível!" exibido quando o usuário cruza
  * um nível de especialista numa disciplina. Aparece, segura ~4.3s e some sozinho
- * (não exige toque). Reutiliza o DisciplineBadge para mostrar o novo nível.
+ * (não exige toque). Renderizado dentro de um Modal para cobrir a tela inteira,
+ * incluindo a barra de abas inferior e a status bar. Reutiliza o DisciplineBadge.
  */
 export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -39,40 +43,52 @@ export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
     });
   }, [levelUp]);
 
-  if (!levelUp) return null;
-
   return (
-    <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity }]}>
-      <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
-        <Text style={styles.title}>Você subiu de nível!</Text>
+    <Modal
+      visible={!!levelUp}
+      transparent
+      statusBarTranslucent
+      animationType="none"
+      onRequestClose={() => onDone?.()}
+    >
+      {levelUp && (
+        <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity }]}>
+          <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+            <Text style={styles.title}>Você subiu de nível!</Text>
 
-        <View style={styles.badgeWrap}>
-          <DisciplineBadge
-            icon={levelUp.icon}
-            color={levelUp.color}
-            level={levelUp.new_level}
-            isDark={isDark}
-          />
-        </View>
+            <View style={styles.badgeWrap}>
+              <DisciplineBadge
+                icon={levelUp.icon}
+                color={levelUp.color}
+                level={levelUp.new_level}
+                isDark={isDark}
+              />
+            </View>
 
-        <Text style={styles.subtitle}>
-          Especialista nível {levelUp.new_level} em {levelUp.discipline_name}
-        </Text>
-      </Animated.View>
-    </Animated.View>
+            <Text style={styles.subtitle}>
+              Especialista nível {levelUp.new_level} em {levelUp.discipline_name}
+            </Text>
+          </Animated.View>
+
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <ConfettiCannon
+              count={80}
+              origin={{ x: width / 2, y: -10 }}
+              explosionSpeed={350}
+              fallSpeed={2200}
+              fadeOut
+              autoStart
+            />
+          </View>
+        </Animated.View>
+      )}
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    // Abaixo do confete (zIndex 200) para que ele caia visível sobre o card,
-    // mas acima do conteúdo da fase.
-    zIndex: 150,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.55)',

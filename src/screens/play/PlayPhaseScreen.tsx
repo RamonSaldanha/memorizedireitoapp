@@ -234,10 +234,10 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
           setShowCompletion(true);
         }
 
-        // Celebração de subida de nível na disciplina (overlay auto-dismiss)
+        // Celebração de subida de nível na disciplina (overlay auto-dismiss,
+        // com confete próprio dentro do Modal)
         if (r.discipline_level_up) {
           setLevelUp(r.discipline_level_up);
-          fireConfetti();
         }
 
         // Invalida o mapa e as conquistas para refletir progresso lá
