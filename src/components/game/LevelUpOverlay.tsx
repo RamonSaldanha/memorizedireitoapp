@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { DisciplineBadge } from '../ui/DisciplineBadge';
-import { colors } from '../../theme/colors';
 import type { DisciplineLevelUp } from '../../api/play';
 
 type Props = {
@@ -12,7 +11,7 @@ type Props = {
 
 /**
  * Overlay auto-dismiss de "VOCÊ SUBIU DE NÍVEL!" exibido quando o usuário cruza
- * um nível de especialista numa disciplina. Aparece, segura ~2.2s e some sozinho
+ * um nível de especialista numa disciplina. Aparece, segura ~4.3s e some sozinho
  * (não exige toque). Reutiliza o DisciplineBadge para mostrar o novo nível.
  */
 export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
@@ -30,7 +29,7 @@ export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
         Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
         Animated.spring(scale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
       ]),
-      Animated.delay(2200),
+      Animated.delay(4300),
       Animated.parallel([
         Animated.timing(opacity, { toValue: 0, duration: 380, useNativeDriver: true }),
         Animated.timing(scale, { toValue: 0.92, duration: 380, useNativeDriver: true }),
@@ -45,9 +44,7 @@ export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
   return (
     <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity }]}>
       <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
-        <Text style={[styles.title, { color: isDark ? colors.gray[100] : colors.gray[800] }]}>
-          Você subiu de nível!
-        </Text>
+        <Text style={styles.title}>Você subiu de nível!</Text>
 
         <View style={styles.badgeWrap}>
           <DisciplineBadge
@@ -58,7 +55,7 @@ export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
           />
         </View>
 
-        <Text style={[styles.subtitle, { color: isDark ? colors.gray[200] : colors.gray[800] }]}>
+        <Text style={styles.subtitle}>
           Especialista nível {levelUp.new_level} em {levelUp.discipline_name}
         </Text>
       </Animated.View>
@@ -88,9 +85,13 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   badgeWrap: {
     marginTop: 18,
@@ -99,9 +100,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
 });
