@@ -44,6 +44,8 @@ function AppBootstrap() {
             lives: res.data.lives,
             has_infinite_lives: res.data.has_infinite_lives,
             xp: res.data.xp,
+            current_streak: res.data.current_streak,
+            longest_streak: res.data.longest_streak,
             name: res.data.name,
             avatar: res.data.avatar,
           });

@@ -1,15 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
-import { Heart, Gem, InfinityIcon } from 'lucide-react-native';
+import { Heart, Gem, InfinityIcon, Flame } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../../theme/colors';
 import { useUserStore } from '../../stores/userStore';
 import { useAppearance } from '../../hooks/useAppearance';
 import { Avatar } from '../ui/Avatar';
+import type { PlayStackParamList } from '../../navigation/AppTabs';
+
+type Nav = NativeStackNavigationProp<PlayStackParamList>;
 
 export function AppHeader() {
-  const { lives, hasInfiniteLives, xp, name, avatar } = useUserStore();
+  const { lives, hasInfiniteLives, xp, currentStreak, name, avatar } = useUserStore();
   const { isDark, theme } = useAppearance();
+  const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const prevLives = useRef(lives);
   const heartScale = useRef(new Animated.Value(1)).current;
@@ -42,6 +48,21 @@ export function AppHeader() {
           </Text>
         )}
       </View>
+
+      {/* Ofensiva (streak) */}
+      <Pressable
+        style={[styles.pill, { backgroundColor: isDark ? colors.gray[900] : colors.orange[50] }]}
+        onPress={() => navigation.navigate('Ofensiva')}
+      >
+        <Flame
+          size={18}
+          color={currentStreak > 0 ? colors.orange[500] : colors.gray[400]}
+          fill={currentStreak > 0 ? colors.orange[500] : 'transparent'}
+        />
+        <Text style={[styles.pillText, { color: currentStreak > 0 ? colors.orange[500] : colors.gray[400] }]}>
+          {currentStreak}
+        </Text>
+      </Pressable>
 
       {/* XP badge-style */}
       <View style={styles.xpRow}>

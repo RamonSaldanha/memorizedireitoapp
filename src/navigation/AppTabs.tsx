@@ -7,6 +7,7 @@ import { useAppearance } from '../hooks/useAppearance';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { NoLivesScreen } from '../screens/play/NoLivesScreen';
+import { OfensivaScreen } from '../screens/OfensivaScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
 import { RankingScreen } from '../screens/RankingScreen';
 import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
@@ -17,6 +18,7 @@ export type PlayStackParamList = {
   PlayMap: undefined;
   PlayPhase: { phaseId: number };
   NoLives: undefined;
+  Ofensiva: undefined;
 };
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
@@ -27,6 +29,7 @@ function PlayStackNavigator() {
       <PlayStack.Screen name="PlayMap" component={PlayMapScreen} />
       <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
       <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
+      <PlayStack.Screen name="Ofensiva" component={OfensivaScreen} />
     </PlayStack.Navigator>
   );
 }

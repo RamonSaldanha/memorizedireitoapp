@@ -29,7 +29,7 @@ export type MapResponse = {
   hasMoreAbove: boolean;
   hasMoreBelow: boolean;
   totalPhases: number;
-  user: { lives: number; has_infinite_lives: boolean; xp: number };
+  user: { lives: number; has_infinite_lives: boolean; xp: number; current_streak: number; longest_streak: number };
 };
 
 export type LoadMorePhasesResponse = {
@@ -86,7 +86,7 @@ export type PhaseDetail = {
   phaseId: number;
   nextPhaseId: number | null;
   phaseBlockUuids: string[];
-  user: { lives: number; has_infinite_lives: boolean; xp: number };
+  user: { lives: number; has_infinite_lives: boolean; xp: number; current_streak: number; longest_streak: number };
 };
 
 export type SubmitPayload = {
@@ -107,7 +107,7 @@ export type SubmitResponse = {
   };
   answers: SegmentAnswer[];
   next_segment: ActiveSegment | null;
-  user: { lives: number; has_infinite_lives: boolean; xp: number };
+  user: { lives: number; has_infinite_lives: boolean; xp: number; current_streak: number; longest_streak: number };
   xp_gained: number;
   lost_life: boolean;
   should_redirect: boolean;

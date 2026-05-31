@@ -21,6 +21,7 @@ export const colors = {
   red: { 50: '#fff1f2', 100: '#ffe4e6', 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
   yellow: { 50: '#fefce8', 100: '#fef9c3', 400: '#facc15', 500: '#eab308', 600: '#ca8a04', 700: '#a16207' },
   pink: { 50: '#fdf2f8', 100: '#fce7f3', 500: '#ec4899', 900: '#831843' },
+  orange: { 50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 900: '#7c2d12' },
 
   // Semantic (light mode)
   background: '#ffffff',

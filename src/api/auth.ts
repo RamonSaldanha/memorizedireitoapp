@@ -7,6 +7,8 @@ export type UserData = {
   lives: number;
   has_infinite_lives: boolean;
   xp: number;
+  current_streak: number;
+  longest_streak: number;
   is_admin: boolean;
   email_verified_at: string | null;
   avatar: string | null;
