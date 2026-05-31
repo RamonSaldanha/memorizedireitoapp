@@ -358,5 +358,5 @@ const styles = StyleSheet.create({
   shareLabel: { color: colors.gray[700], fontSize: 17, fontWeight: '800', marginTop: 2 },
   shareFooter: { paddingHorizontal: 28, paddingVertical: 20, alignItems: 'center', gap: 2 },
   shareSubtitle: { color: colors.gray[500], fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  shareUrl: { color: colors.orange[400], fontSize: 12, fontWeight: '600' },
+  shareUrl: { color: colors.blue[500], fontSize: 13, fontWeight: '700' },
 });
