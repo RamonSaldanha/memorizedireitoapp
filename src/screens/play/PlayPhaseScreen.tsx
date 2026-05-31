@@ -16,7 +16,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeft } from 'lucide-react-native';
-import { playApi, type PhaseDetail, type ActiveSegment, type CompletedSegment, type SegmentAnswer } from '../../api/play';
+import { playApi, type PhaseDetail, type ActiveSegment, type CompletedSegment, type SegmentAnswer, type DisciplineLevelUp } from '../../api/play';
 import { useUserStore } from '../../stores/userStore';
 import { GameButton } from '../../components/ui/GameButton';
 import { AppHeader } from '../../components/layout/AppHeader';
@@ -24,6 +24,7 @@ import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
 import { XpGainPopup } from '../../components/game/XpGainPopup';
+import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { LostLifeToast } from '../../components/game/LostLifeToast';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useSuccessSound } from '../../hooks/useSuccessSound';
@@ -66,6 +67,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
   const [xpAmount, setXpAmount] = useState<number | null>(null);
   const [xpKey, setXpKey] = useState(0);
+  const [levelUp, setLevelUp] = useState<DisciplineLevelUp | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lostLifeMessage, setLostLifeMessage] = useState<string | null>(null);
@@ -230,6 +232,12 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         } else {
           setActive(null);
           setShowCompletion(true);
+        }
+
+        // Celebração de subida de nível na disciplina (overlay auto-dismiss)
+        if (r.discipline_level_up) {
+          setLevelUp(r.discipline_level_up);
+          fireConfetti();
         }
 
         // Invalida o mapa e as conquistas para refletir progresso lá
@@ -464,6 +472,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
       )}
 
       <XpGainPopup key={xpKey} amount={xpAmount} onDone={() => setXpAmount(null)} />
+      <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
       <ConfettiView />
       <LostLifeToast
         visible={lostLifeMessage !== null}

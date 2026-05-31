@@ -109,9 +109,19 @@ export type SubmitResponse = {
   next_segment: ActiveSegment | null;
   user: { lives: number; has_infinite_lives: boolean; xp: number; current_streak: number; longest_streak: number };
   xp_gained: number;
+  discipline_level_up: DisciplineLevelUp | null;
   lost_life: boolean;
   should_redirect: boolean;
   redirect_url: string | null;
+};
+
+export type DisciplineLevelUp = {
+  discipline_id: number;
+  discipline_name: string;
+  icon: string;
+  color: string;
+  old_level: number;
+  new_level: number;
 };
 
 export type LoadMoreAboveResponse = {
