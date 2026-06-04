@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { colors } from '../../theme/colors';
 import {
   Scale, BookOpen, Users, User, Shield, ShieldAlert, ShieldCheck,
   FileText, ScrollText, Receipt, DollarSign, Landmark, Gavel, Building2,
@@ -52,8 +53,8 @@ const GREY = {
   band: '#E5E7EB',
   inner: '#D1D5DB',
   fill: '#F3F4F6',
-  shieldBorder: '#9CA3AF',
-  shieldFill: '#6B7280',
+  shieldBorder: '#D1D5DB',
+  shieldFill: '#E5E7EB',
 };
 
 // ─── Sizes (mirrors sizeMap in the Vue component) ───────────────────────────
@@ -91,8 +92,8 @@ export function DisciplineBadge({ icon, color, level = 1, locked = false, isDark
   const innerColor = locked ? GREY.inner : color;
   const innerFill  = locked ? (isDark ? greyDark.fill  : GREY.fill)  : (isDark ? tint(color, 0.10) : lighten(color, 0.93));
 
-  const shieldOuterFill = locked ? (isDark ? greyDark.shieldBorder : GREY.shieldBorder) : color;
-  const shieldInnerFill = locked ? (isDark ? greyDark.shieldFill   : GREY.shieldFill)   : lighten(color, 0.18);
+  const shieldOuterFill = locked ? (isDark ? greyDark.shieldBorder : GREY.shieldBorder) : lighten(color, 0.4);
+  const shieldInnerFill = locked ? (isDark ? greyDark.shieldFill   : GREY.shieldFill)   : (isDark ? tint(color, 0.35) : lighten(color, 0.7));
   const shieldStroke      = locked ? '#9CA3AF'          : color;
 
   return (
@@ -135,7 +136,7 @@ export function DisciplineBadge({ icon, color, level = 1, locked = false, isDark
             strokeWidth={0.8}
           />
         </Svg>
-        <Text style={[styles.shieldText, { fontSize: s.shieldFontSize }]}>{level}</Text>
+        <Text style={[styles.shieldText, { fontSize: s.shieldFontSize, color: isDark ? '#fff' : colors.gray[900] }]}>{level}</Text>
       </View>
     </View>
   );
@@ -154,7 +155,6 @@ const styles = StyleSheet.create({
   shieldText: {
     position: 'absolute',
     fontWeight: '900',
-    color: '#111827',
     textAlign: 'center',
     paddingBottom: 1,
   },

@@ -3,20 +3,14 @@ import {
   View, Text, StyleSheet, FlatList, ActivityIndicator, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
-import { Zap, BookOpen } from 'lucide-react-native';
+import { TrendingUp, BookOpen } from 'lucide-react-native';
 import { disciplinesApi, DisciplineProgress } from '../api/disciplines';
 import { DisciplineBadge } from '../components/ui/DisciplineBadge';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
 import type { ThemeTokens } from '../stores/appearanceStore';
-
-const RING_SIZE = 64;
-const RADIUS = 28;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const CENTER = RING_SIZE / 2;
 
 export function DisciplinesScreen() {
   const { isDark, theme } = useAppearance();
@@ -65,18 +59,44 @@ export function DisciplinesScreen() {
             {/* Nível global */}
             {globalLevel && (
               <View style={[styles.globalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                <GlobalProgressRing percent={globalLevel.progress_percent} level={globalLevel.level} isDark={isDark} />
-                <View style={styles.globalInfo}>
-                  <Text style={[styles.globalLabel, { color: theme.foreground }]}>Nivel Global</Text>
-                  <View style={styles.xpRow}>
-                    <Zap size={12} color={colors.yellow[500]} />
-                    <Text style={styles.globalXp}>
-                      {(data?.total_xp ?? 0).toLocaleString('pt-BR')} XP acumulados
+                {/* Linha 1: badge + título + barra */}
+                <View style={styles.globalTopRow}>
+                  <View style={styles.levelBadge}>
+                    <Text style={styles.levelBadgeText}>{globalLevel.level}</Text>
+                  </View>
+                  <View style={styles.globalTopInfo}>
+                    <View style={styles.globalTitleRow}>
+                      <Text style={[styles.globalTitle, { color: theme.foreground }]}>Nível Global</Text>
+                      <Text style={[styles.percentText, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
+                        {globalLevel.progress_percent}% concluído
+                      </Text>
+                    </View>
+                    <View style={[styles.globalBarTrack, { backgroundColor: isDark ? colors.gray[700] : colors.gray[200] }]}>
+                      <View style={[styles.globalBarFill, { width: `${Math.max(globalLevel.progress_percent, 2)}%` }]} />
+                    </View>
+                  </View>
+                </View>
+
+                {/* Linha 2: rodapé em 2 colunas */}
+                <View style={[styles.globalFooter, { borderTopColor: isDark ? colors.gray[700] : colors.gray[200] }]}>
+                  <View style={styles.footerCol}>
+                    <Text style={[styles.footerLabel, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>XP acumulado</Text>
+                    <Text style={[styles.footerValue, { color: theme.foreground }]}>
+                      {(data?.total_xp ?? 0).toLocaleString('pt-BR')}
                     </Text>
                   </View>
-                  <Text style={[styles.globalNext, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
-                    {globalLevel.current_xp_in_level} / {globalLevel.xp_for_next_level} XP para o nivel {globalLevel.level + 1}
-                  </Text>
+                  <View style={[styles.footerCol, styles.footerColRight]}>
+                    <View style={styles.footerLabelRow}>
+                      <Text style={[styles.footerLabel, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
+                        Para o nível {globalLevel.level + 1}
+                      </Text>
+                      <TrendingUp size={14} color={isDark ? colors.gray[500] : colors.gray[400]} />
+                    </View>
+                    <Text style={[styles.footerValue, { color: theme.foreground }]}>
+                      {globalLevel.xp_for_next_level.toLocaleString('pt-BR')}
+                      <Text style={[styles.footerValueXp, { color: isDark ? colors.gray[400] : colors.gray[500] }]}> XP</Text>
+                    </Text>
+                  </View>
                 </View>
               </View>
             )}
@@ -124,28 +144,6 @@ export function DisciplinesScreen() {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function GlobalProgressRing({ percent, level, isDark }: { percent: number; level: number; isDark: boolean }) {
-  const offset = CIRCUMFERENCE - (CIRCUMFERENCE * percent) / 100;
-  return (
-    <View style={{ width: RING_SIZE, height: RING_SIZE, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
-        <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke={isDark ? colors.gray[700] : colors.gray[100]} strokeWidth={4} />
-        <Circle
-          cx={CENTER} cy={CENTER} r={RADIUS} fill="none"
-          stroke={colors.green[500]} strokeWidth={4}
-          strokeDasharray={`${CIRCUMFERENCE}`}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          transform={`rotate(-90, ${CENTER}, ${CENTER})`}
-        />
-      </Svg>
-      <Text style={{ position: 'absolute', fontSize: 18, fontWeight: '900', color: isDark ? '#fff' : colors.gray[900] }}>
-        {level}
-      </Text>
-    </View>
-  );
-}
-
 function DisciplineGrid({
   disciplines, isDark, theme, locked,
 }: {
@@ -192,7 +190,7 @@ function DisciplineCard({
           : theme.card,
         borderColor: locked
           ? (isDark ? colors.gray[700] : colors.gray[200])
-          : (isDark ? colors.gray[700] : colors.gray[100]),
+          : (isDark ? colors.gray[700] : colors.gray[200]),
         borderStyle: locked ? 'dashed' : 'solid',
         opacity: locked ? 0.6 : 1,
       },
@@ -209,7 +207,10 @@ function DisciplineCard({
       </View>
 
       <Text
-        style={[styles.disciplineName, { color: locked ? theme.mutedForeground : theme.foreground }]}
+        style={[
+          styles.disciplineName,
+          { color: locked ? theme.mutedForeground : theme.foreground, fontWeight: locked ? '500' : '700' },
+        ]}
         numberOfLines={2}
       >
         {discipline.name}
@@ -221,10 +222,10 @@ function DisciplineCard({
         )}
       </View>
 
-      <Text style={[styles.xpText, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
+      <Text style={[styles.xpText, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>
         {locked
-          ? `0 XP / ${discipline.xp_for_next_level} XP`
-          : `${discipline.current_xp_in_level} XP / ${discipline.xp_for_next_level} XP`
+          ? `0 / ${discipline.xp_for_next_level} XP`
+          : `${discipline.current_xp_in_level} / ${discipline.xp_for_next_level} XP`
         }
       </Text>
     </View>
@@ -239,21 +240,49 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16, paddingBottom: 32 },
   pageTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center', paddingVertical: 20 },
   globalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     gap: 16,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 24,
   },
-  globalInfo: { flex: 1, gap: 4 },
-  globalLabel: { fontSize: 14, fontWeight: '700' },
-  xpRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  globalXp: { fontSize: 12, color: colors.gray[500] },
-  globalNext: { fontSize: 11 },
+  globalTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  levelBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.purple[600],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelBadgeText: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  globalTopInfo: { flex: 1 },
+  globalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  globalTitle: { fontSize: 18, fontWeight: '700' },
+  percentText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  globalBarTrack: { height: 12, borderRadius: 999, overflow: 'hidden' },
+  globalBarFill: { height: '100%', borderRadius: 999, backgroundColor: colors.green[600] },
+  globalFooter: {
+    flexDirection: 'row',
+    gap: 16,
+    borderTopWidth: 1,
+    paddingTop: 12,
+  },
+  footerCol: { flex: 1 },
+  footerColRight: { alignItems: 'flex-end' },
+  footerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  footerLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  footerValue: { fontSize: 16, fontWeight: '700' },
+  footerValueXp: { fontSize: 13, fontWeight: '400' },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 12,
@@ -271,21 +300,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   disciplineName: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 4,
+    lineHeight: 20,
+    marginTop: 12,
   },
   progressTrack: {
     width: '100%',
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
-    marginTop: 4,
+    marginTop: 12,
   },
-  progressFill: { height: '100%', borderRadius: 3 },
-  xpText: { fontSize: 11, marginTop: 2 },
+  progressFill: { height: '100%', borderRadius: 4 },
+  xpText: { fontSize: 12, fontWeight: '500', marginTop: 8 },
   emptyState: { alignItems: 'center', paddingTop: 48, gap: 12 },
   emptyIcon: { width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 15, fontWeight: '700' },

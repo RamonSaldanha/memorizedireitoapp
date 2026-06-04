@@ -31,17 +31,17 @@ export function AppHeader() {
   }, [lives]);
 
   return (
-    <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.background, borderBottomColor: theme.border }]}>
+    <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: theme.background, borderBottomColor: theme.border }]}>
       {/* Vidas */}
       <View style={[styles.pill, { backgroundColor: isDark ? colors.gray[900] : colors.pink[50] }]}>
         <Animated.View style={{ transform: [{ scale: heartScale }] }}>
           <Heart
-            size={18}
+            size={20}
             color={hasInfiniteLives ? colors.blue[500] : lives > 0 ? colors.red[500] : colors.gray[400]}
           />
         </Animated.View>
         {hasInfiniteLives ? (
-          <InfinityIcon size={14} color={colors.blue[500]} />
+          <InfinityIcon size={16} color={colors.blue[500]} />
         ) : (
           <Text style={[styles.pillText, { color: lives > 0 ? colors.red[500] : colors.gray[400] }]}>
             {lives}
@@ -55,7 +55,7 @@ export function AppHeader() {
         onPress={() => navigation.navigate('Ofensiva')}
       >
         <Flame
-          size={18}
+          size={20}
           color={currentStreak > 0 ? colors.orange[500] : colors.gray[400]}
           fill={currentStreak > 0 ? colors.orange[500] : 'transparent'}
         />
@@ -75,7 +75,7 @@ export function AppHeader() {
       {/* Gema (vidas infinitas) */}
       {!hasInfiniteLives && (
         <Pressable style={styles.gemButton}>
-          <Gem size={22} color={colors.blue[500]} />
+          <Gem size={24} color={colors.blue[500]} />
         </Pressable>
       )}
     </View>
@@ -87,28 +87,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap: 8,
-    paddingTop: 10,
-    paddingBottom: 10,
+    gap: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 999,
   },
-  pillText: { fontSize: 13, fontWeight: '700' },
+  pillText: { fontSize: 14, fontWeight: '700' },
   xpRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   xpBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 6,
   },
-  xpBadgeText: { fontSize: 11, fontWeight: '700' },
-  xpValue: { fontSize: 14, fontWeight: '700' },
+  xpBadgeText: { fontSize: 12, fontWeight: '700' },
+  xpValue: { fontSize: 15, fontWeight: '700' },
   gemButton: { padding: 4 },
 });

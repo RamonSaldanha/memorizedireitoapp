@@ -68,51 +68,51 @@ export function AppTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: 64,
+          height: 72,
           borderTopWidth: 1,
           borderTopColor: theme.border,
           backgroundColor: theme.background,
-          paddingBottom: 8,
-          paddingTop: 6,
+          paddingBottom: 10,
+          paddingTop: 8,
         },
         tabBarActiveTintColor: colors.purple[600],
         tabBarInactiveTintColor: isDark ? colors.gray[500] : colors.gray[400],
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
       }}
     >
       <Tab.Screen
         name="Jogar"
         component={PlayStackNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => <Gamepad2 size={size} color={color} />,
+          tabBarIcon: ({ color }) => <Gamepad2 size={26} color={color} />,
         }}
       />
       <Tab.Screen
         name="Conquistas"
         component={DisciplinesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <GraduationCap size={size} color={color} />,
+          tabBarIcon: ({ color }) => <GraduationCap size={26} color={color} />,
         }}
       />
       <Tab.Screen
         name="Ranking"
         component={RankingScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
+          tabBarIcon: ({ color }) => <Trophy size={26} color={color} />,
         }}
       />
       <Tab.Screen
         name="Leis"
         component={LegalReferencesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+          tabBarIcon: ({ color }) => <BookOpen size={26} color={color} />,
         }}
       />
       <Tab.Screen
         name="Perfil"
         component={ProfileStackNavigator}
         options={{
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+          tabBarIcon: ({ color }) => <User size={26} color={color} />,
         }}
       />
     </Tab.Navigator>

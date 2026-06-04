@@ -27,6 +27,9 @@ const PADDING_TOP = 50;
 const PADDING_BOTTOM = 20;
 const PHASE_SIZE = { current: 90, complete: 64, blocked: 58, default: 62 } as const;
 
+// Amplia os círculos/espaçamento no app vs. web (boost mobile)
+const MAP_SCALE_BOOST = 1.08;
+
 const SCROLL_THRESHOLD = 400;
 
 function getPhaseSize(phase: Phase): number {
@@ -99,8 +102,9 @@ export function PlayMapScreen() {
   const { lives, hasInfiniteLives } = useUserStore();
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
 
-  // Fator responsivo idêntico à web (Map.vue:46-60)
-  const scale = screenWidth < 400 ? 0.9 : screenWidth < 640 ? 0.95 : 1.0;
+  // Fator responsivo (base idêntica à web Map.vue:46-60) × boost mobile
+  const baseScale = screenWidth < 400 ? 0.9 : screenWidth < 640 ? 0.95 : 1.0;
+  const scale = baseScale * MAP_SCALE_BOOST;
 
   const { data, isLoading } = useQuery({
     queryKey: ['play-map'],
