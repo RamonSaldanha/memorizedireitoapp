@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { G, Path, SvgAst, parse, type PathProps, type XmlAST } from 'react-native-svg';
 import { avatarBodyHeight, buildAvatarSvg, type AvatarConfig } from '../../lib/avatar';
+import { useReduceMotion } from '../../hooks/useReduceMotion';
 import { DURATION_MS, bodyTransform, headTransform, lidTransform } from './motion';
 
 /**
@@ -109,23 +109,6 @@ function hookMotion(node: XmlAST): XmlAST {
   node.children.forEach((child) => typeof child === 'object' && hookMotion(child));
 
   return node;
-}
-
-function useReduceMotion(): boolean {
-  const [reduce, setReduce] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((value) => alive && setReduce(value));
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
-
-    return () => {
-      alive = false;
-      subscription.remove();
-    };
-  }, []);
-
-  return reduce;
 }
 
 type Props = {

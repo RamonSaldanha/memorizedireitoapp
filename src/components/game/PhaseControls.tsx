@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RefreshCw } from 'lucide-react-native';
 import { GameButton } from '../ui/GameButton';
@@ -15,6 +15,8 @@ type Props = {
   onSelect: (word: string) => void;
   onClear: () => void;
   onVerify: () => void;
+  // O onboarding põe os controles no rodapé dele, com o fundo da página.
+  style?: StyleProp<ViewStyle>;
 };
 
 export function PhaseControls({
@@ -26,6 +28,7 @@ export function PhaseControls({
   onSelect,
   onClear,
   onVerify,
+  style,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { isDark, theme } = useAppearance();
@@ -34,7 +37,7 @@ export function PhaseControls({
   if (verified) return null;
 
   return (
-    <View style={[styles.wrap, { paddingBottom: bottomPad, backgroundColor: theme.background, borderTopColor: theme.border }]}>
+    <View style={[styles.wrap, { paddingBottom: bottomPad, backgroundColor: theme.background, borderTopColor: theme.border }, style]}>
       {!verified ? (
         <>
           {hasLacunas && options.length > 0 && (

@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { playApi, Phase } from '../../api/play';
 import { AppHeader } from '../../components/layout/AppHeader';
+import { WelcomeOfferBanner } from '../../components/WelcomeOfferBanner';
 import { PhaseCircle } from '../../components/game/PhaseCircle';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
@@ -280,6 +281,9 @@ export function PlayMapScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
       <AppHeader />
+
+      {/* Lembrete da oferta de boas-vindas (24h depois do onboarding) */}
+      <WelcomeOfferBanner />
 
       {phases.length === 0 ? (
         <View style={[styles.center, { backgroundColor: theme.background }]}>

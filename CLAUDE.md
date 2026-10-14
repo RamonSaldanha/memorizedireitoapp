@@ -49,5 +49,15 @@ The avatar is drawn by the **same code as the web**: [src/lib/avatar/](src/lib/a
 - Change animation: [AnimatedAvatar](src/components/avatar/AnimatedAvatar.tsx) parses the lib's `animated: true` SVG and swaps its three hooks (`avatar-head`, `avatar-body`, `avatar-lid`) for components driven by [motion.ts](src/components/avatar/motion.ts), whose keyframes are copied from the web's `AvatarPreview.vue` — keep both in sync.
 - State: `userStore.avatarConfig` (from `avatar_config` on `/me`, login and register) feeds the header, the Perfil tab icon and the profile.
 
+### Onboarding
+Port of the web's `Onboarding/Index.vue` (same 8 steps, copy, colors and animations): welcome → goal → area → minutes/day → suggested trail → one real game block (+25 XP) → avatar teaser → 15% off the yearly plan for 24h, plus the "Tem certeza que quer pular?" sheet.
+- Who sees it: only accounts created by this app. `authApi.register` sends `onboarding: true`; the server leaves the onboarding pending and `UserResource` returns `needs_onboarding: true`. Older app builds don't send the flag and get it marked as done.
+- Gating: `authStore.onboardingPending` (persisted in AsyncStorage `@onboarding_pending`, read in `initialize()` with the token) makes [RootNavigator](src/navigation/RootNavigator.tsx) show `Onboarding` instead of `App`. Finishing or skipping clears it; so do logout and a 401.
+- API: `/onboarding` (GET) and `/onboarding/{trail,challenge,offer,finish}` (POST) in [src/api/onboarding.ts](src/api/onboarding.ts). The POSTs return 409 once the onboarding is done; the screen then just leaves.
+- [src/lib/onboarding/quiz.ts](src/lib/onboarding/quiz.ts) is a **byte-for-byte copy** of the web's `resources/js/components/onboarding/quiz.ts` (questions, trail suggestion, challenge articles). Don't edit it here; change it on the web and copy it over. `demoAvatars.ts` is the web's landing avatars with only the import changed.
+- The challenge reuses `ActiveChallenge`, `PhaseControls` and `CompletedSegmentView`; word selection lives in [useGapSelections](src/hooks/useGapSelections.ts), shared with `PlayPhaseScreen`.
+- Animations in [src/components/onboarding/motion.tsx](src/components/onboarding/motion.tsx) mirror the CSS keyframes of the web page (same curves, durations, delays) and respect "reduce motion".
+- The welcome offer (`welcome_offer` on `/me`) shows as [WelcomeOfferBanner](src/components/WelcomeOfferBanner.tsx) under the map header. "Garantir" opens the web subscription page, which already applies the discount on the yearly plan.
+
 ### Styling
 NativeWind + Tailwind are installed, but most existing screens use `StyleSheet.create` with values pulled from [src/theme/colors.ts](src/theme/colors.ts), [src/theme/typography.ts](src/theme/typography.ts), [src/theme/shadows.ts](src/theme/shadows.ts). Match the surrounding file's approach rather than mixing in Tailwind classes ad-hoc — the theme tokens are the source of truth that keeps parity with the web.

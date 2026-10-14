@@ -38,6 +38,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       useAuthStore.setState({ token: null, user: null });
+      await useAuthStore.getState().setOnboardingPending(false);
       useUserStore.getState().reset();
     }
     return Promise.reject(error);

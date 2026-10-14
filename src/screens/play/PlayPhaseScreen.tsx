@@ -27,6 +27,7 @@ import { XpGainPopup } from '../../components/game/XpGainPopup';
 import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { LostLifeToast } from '../../components/game/LostLifeToast';
 import { useConfetti } from '../../hooks/useConfetti';
+import { useGapSelections } from '../../hooks/useGapSelections';
 import { useSuccessSound } from '../../hooks/useSuccessSound';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
@@ -60,8 +61,10 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
   const [phaseBlockUuids, setPhaseBlockUuids] = useState<string[]>([]);
   const [legislationUuid, setLegislationUuid] = useState<string>('');
 
-  const [userSelections, setUserSelections] = useState<Record<number, string>>({});
   const [verified, setVerified] = useState(false);
+  const {
+    userSelections, setUserSelections, availableOptions, allFilled, fillNextEmpty, unselectGap, clearAll,
+  } = useGapSelections(active, verified);
   const [verificationResults, setVerificationResults] = useState<SegmentAnswer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -110,58 +113,6 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     });
-  }, [verified]);
-
-  /* ===== Tokens de palavras disponíveis (descontando duplicatas usadas) ===== */
-  const availableOptions = useMemo(() => {
-    if (!active) return [];
-    const selectedCounts: Record<string, number> = {};
-    for (const w of Object.values(userSelections)) {
-      selectedCounts[w] = (selectedCounts[w] || 0) + 1;
-    }
-    const result: string[] = [];
-    const usedCounts: Record<string, number> = {};
-    for (const w of active.options) {
-      usedCounts[w] = (usedCounts[w] || 0) + 1;
-      const used = selectedCounts[w] || 0;
-      if (usedCounts[w] > used) result.push(w);
-    }
-    return result;
-  }, [active?.uuid, userSelections]);
-
-  const allFilled = useMemo(() => {
-    if (!active) return false;
-    return active.lacunas.every((l) => !!userSelections[l.gap_order]);
-  }, [active?.uuid, userSelections]);
-
-  /* ===== Ações do jogador ===== */
-  const fillNextEmpty = useCallback(
-    (word: string) => {
-      if (!active || verified) return;
-      // Encontra próxima lacuna vazia em ordem de gap_order
-      const sorted = [...active.lacunas].sort((a, b) => a.gap_order - b.gap_order);
-      const next = sorted.find((l) => !userSelections[l.gap_order]);
-      if (!next) return;
-      setUserSelections((prev) => ({ ...prev, [next.gap_order]: word }));
-    },
-    [active?.uuid, verified, userSelections],
-  );
-
-  const unselectGap = useCallback(
-    (gapOrder: number) => {
-      if (verified) return;
-      setUserSelections((prev) => {
-        const next = { ...prev };
-        delete next[gapOrder];
-        return next;
-      });
-    },
-    [verified],
-  );
-
-  const clearAll = useCallback(() => {
-    if (verified) return;
-    setUserSelections({});
   }, [verified]);
 
   /* ===== Submit ===== */

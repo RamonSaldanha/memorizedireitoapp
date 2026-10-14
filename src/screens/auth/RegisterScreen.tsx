@@ -23,7 +23,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { setToken, setUser } = useAuthStore();
+  const { setToken, setUser, setOnboardingPending } = useAuthStore();
   const { updateFromApi } = useUserStore();
 
   async function handleRegister() {
@@ -39,6 +39,10 @@ export function RegisterScreen({ navigation }: Props) {
     setLoading(true);
     try {
       const res = await authApi.register(name, email, password, passwordConfirmation);
+      // Antes do token: é o token que troca de tela, e ela já tem de ser o onboarding.
+      if (res.data.user.needs_onboarding) {
+        await setOnboardingPending(true);
+      }
       await setToken(res.data.token);
       setUser(res.data.user);
       updateFromApi({

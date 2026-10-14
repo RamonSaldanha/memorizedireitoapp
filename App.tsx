@@ -49,6 +49,10 @@ function AppBootstrap() {
             name: res.data.name,
             avatar_config: res.data.avatar_config,
           });
+          // Onboarding concluído em outro lugar: não prende mais a pessoa nele.
+          if (res.data.needs_onboarding === false && useAuthStore.getState().onboardingPending) {
+            useAuthStore.getState().setOnboardingPending(false);
+          }
         })
         .catch(() => {});
     }

@@ -8,13 +8,18 @@ import { useUserStore } from '../stores/userStore';
 
 export type SubscriptionToast = { title: string; variant: 'success' | 'error' | 'default' };
 
+// Sync que ficou sem dono: a instância que abriu o navegador desmontou antes da
+// volta (o onboarding abre a assinatura e já sai de tela). A próxima instância
+// montada — o banner da oferta no mapa — faz o sync quando o app voltar.
+let orphanedSync = false;
+
 /**
  * Abre a página de assinatura do site e, quando a pessoa volta para o app,
  * ressincroniza `/me` — é o que faz o status premium (e o cadeado das
  * fantasias do avatar) mudar sem reabrir o app.
  *
  * Quem usa desenha o overlay de `isSyncing` e o `toast`: o perfil e o editor de
- * avatar.
+ * avatar. O onboarding e o banner da oferta no mapa só abrem a página.
  */
 export function useSubscriptionCheckout() {
   const setUser = useAuthStore((s) => s.setUser);
@@ -54,14 +59,20 @@ export function useSubscriptionCheckout() {
       const prev = appStateRef.current;
       appStateRef.current = next;
       const voltouAoApp = /inactive|background/.test(prev) && next === 'active';
-      log(`AppState ${prev}→${next} pending=${pendingSyncRef.current} voltou=${voltouAoApp}`);
-      if (voltouAoApp && pendingSyncRef.current) {
+      const pending = pendingSyncRef.current || orphanedSync;
+      log(`AppState ${prev}→${next} pending=${pending} voltou=${voltouAoApp}`);
+      if (voltouAoApp && pending) {
         pendingSyncRef.current = false;
+        orphanedSync = false;
         log('AppState disparou sync');
         syncStatus();
       }
     });
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      // Saiu de tela com o navegador aberto: outra instância faz o sync na volta.
+      if (pendingSyncRef.current) orphanedSync = true;
+    };
   }, []);
 
   const openSubscription = async () => {
