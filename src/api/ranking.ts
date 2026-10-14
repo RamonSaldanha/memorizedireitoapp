@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { AvatarConfig } from '../lib/avatar';
 
 export type RankingUser = {
   id: number;
@@ -7,6 +8,7 @@ export type RankingUser = {
   xp: number;
   position: number;
   is_current_user: boolean;
+  avatar_config?: Partial<AvatarConfig> | null;
 };
 
 export const rankingApi = {

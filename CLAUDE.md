@@ -42,5 +42,12 @@ The split exists because gameplay endpoints return fresh `lives`/`xp` snapshots 
 - Root: native-stack with `Auth` | `App` (token-gated).
 - `AppTabs` (bottom tabs): `Jogar`, `Conquistas`, `Ranking`, `Leis`. The `Jogar` tab embeds its own native-stack (`PlayStack`) with `PlayMap` → `PlayPhase`. When adding a new play-flow screen, add it to `PlayStackParamList` in [src/navigation/AppTabs.tsx](src/navigation/AppTabs.tsx); when adding a top-level destination, add a tab there.
 
+### Avatar
+The avatar is drawn by the **same code as the web**: [src/lib/avatar/](src/lib/avatar/) is a byte-for-byte copy of `resources/js/lib/avatar/` from the web project (pure TS that builds an SVG string from `avatar_config`). **Never edit it here** — change it on the web and run `npm run avatar:sync` (`npm run avatar:check` fails if the copy drifted; `AVATAR_LIB` overrides the default source `../code/memorize/...`).
+- Rendering: `SvgXml` from `react-native-svg` ([src/components/ui/Avatar.tsx](src/components/ui/Avatar.tsx) for circles, [AvatarStage](src/components/avatar/AvatarStage.tsx) for the profile/editor stage).
+- Editor: [AvatarEditorScreen](src/screens/profile/AvatarEditorScreen.tsx) uses `EDITOR_TABS`/`previewWith` from the lib, so tabs and thumbnails match the web editor. Saves via `PUT /profile/avatar`; the server validates ids, `#rrggbb` colors and subscriber-only costumes.
+- Change animation: [AnimatedAvatar](src/components/avatar/AnimatedAvatar.tsx) parses the lib's `animated: true` SVG and swaps its three hooks (`avatar-head`, `avatar-body`, `avatar-lid`) for components driven by [motion.ts](src/components/avatar/motion.ts), whose keyframes are copied from the web's `AvatarPreview.vue` — keep both in sync.
+- State: `userStore.avatarConfig` (from `avatar_config` on `/me`, login and register) feeds the header, the Perfil tab icon and the profile.
+
 ### Styling
 NativeWind + Tailwind are installed, but most existing screens use `StyleSheet.create` with values pulled from [src/theme/colors.ts](src/theme/colors.ts), [src/theme/typography.ts](src/theme/typography.ts), [src/theme/shadows.ts](src/theme/shadows.ts). Match the surrounding file's approach rather than mixing in Tailwind classes ad-hoc — the theme tokens are the source of truth that keeps parity with the web.

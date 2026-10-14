@@ -47,7 +47,7 @@ function AppBootstrap() {
             current_streak: res.data.current_streak,
             longest_streak: res.data.longest_streak,
             name: res.data.name,
-            avatar: res.data.avatar,
+            avatar_config: res.data.avatar_config,
           });
         })
         .catch(() => {});

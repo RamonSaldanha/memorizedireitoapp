@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Crown, Medal, Zap, Flame, TrendingUp, Trophy } from 'lucide-react-native';
 import { rankingApi, RankingUser } from '../api/ranking';
+import { Avatar } from '../components/ui/Avatar';
+import { hasAvatar } from '../lib/avatar';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
 import type { ThemeTokens } from '../stores/appearanceStore';
@@ -234,34 +236,18 @@ function RankingRow({ user, isCurrentUser, isDark, theme }: {
         )}
       </View>
 
-      {/* Avatar — position-specific colored initials (matching web) */}
-      <View
-        style={[
-          styles.avatar,
-          {
-            backgroundColor: isPodium
-              ? posStyle?.avatarBg
-              : (isDark ? colors.gray[700] : colors.gray[100]),
-          },
-          isPodium && {
-            borderWidth: 2,
-            borderColor: posStyle?.avatarRing,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.avatarText,
-            {
-              color: isPodium
-                ? posStyle?.avatarText
-                : (isDark ? colors.gray[300] : colors.gray[600]),
-            },
-          ]}
-        >
-          {((user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')).toUpperCase()}
-        </Text>
-      </View>
+      {/* Avatar — o boneco de cada um; sem ele, iniciais na cor da posição (como na web) */}
+      <Avatar
+        config={user.avatar_config}
+        name={`${user.first_name} ${user.last_name}`}
+        size={40}
+        fallbackColors={
+          posStyle
+            ? { background: posStyle.avatarBg, text: posStyle.avatarText }
+            : { background: isDark ? colors.gray[700] : colors.gray[100], text: isDark ? colors.gray[300] : colors.gray[600] }
+        }
+        style={isPodium && !hasAvatar(user.avatar_config) ? { borderWidth: 2, borderColor: posStyle?.avatarRing } : undefined}
+      />
 
       {/* Name — inline first + last, with position icon for podium */}
       <View style={styles.nameWrap}>
@@ -353,14 +339,6 @@ const styles = StyleSheet.create({
   },
   positionNumber: { fontSize: 12, fontWeight: '900' },
   plainPosition: { fontSize: 14, fontWeight: '700' },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { fontSize: 14, fontWeight: '700' },
   nameWrap: { flex: 1, minWidth: 0 },
   nameRow: {
     flexDirection: 'row',

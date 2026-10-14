@@ -41,7 +41,7 @@ export function LoginScreen({ navigation }: Props) {
         has_infinite_lives: res.data.user.has_infinite_lives,
         xp: res.data.user.xp,
         name: res.data.user.name,
-        avatar: res.data.user.avatar,
+        avatar_config: res.data.user.avatar_config,
       });
     } catch (err: any) {
       const msg = err.response?.data?.message ?? 'Erro ao entrar. Tente novamente.';

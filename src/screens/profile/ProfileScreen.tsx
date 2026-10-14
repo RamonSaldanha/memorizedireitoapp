@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,38 +10,31 @@ import {
   Switch,
   StatusBar,
   ActivityIndicator,
-  AppState,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
-import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2, Gem, ChevronRight } from 'lucide-react-native';
+import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2, Gem, ChevronRight, Pencil } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
-import { Avatar } from '../../components/ui/Avatar';
+import { AvatarStage } from '../../components/avatar/AvatarStage';
 import { GameButton } from '../../components/ui/GameButton';
 import { Toast } from '../../components/ui/Toast';
 import { useAppearance } from '../../hooks/useAppearance';
+import { useSubscriptionCheckout } from '../../hooks/useSubscriptionCheckout';
 import { colors } from '../../theme/colors';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePreferencesStore } from '../../stores/preferencesStore';
-import { authApi } from '../../api/auth';
-import { WEB_SUBSCRIPTION_URL } from '../../api/client';
-
-export type ProfileStackParamList = {
-  ProfileMain: undefined;
-  ChangePassword: undefined;
-};
+import type { ProfileStackParamList } from '../../navigation/AppTabs';
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
 export function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, setUser, logout } = useAuthStore();
-  const { name, avatar, hasInfiniteLives } = useUserStore();
+  const { name, avatarConfig, hasInfiniteLives } = useUserStore();
   const { appearance, setAppearance, isDark, theme } = useAppearance();
   const { successSoundEnabled, setSuccessSoundEnabled } = usePreferencesStore();
   const queryClient = useQueryClient();
@@ -49,7 +42,7 @@ export function ProfileScreen() {
   const [editField, setEditField] = useState<'name' | 'email' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { openSubscription: handleOpenSubscription, isSyncing, toast, setToast } = useSubscriptionCheckout();
 
   const updateMutation = useMutation({
     mutationFn: (data: { name?: string; email?: string }) =>
@@ -93,74 +86,6 @@ export function ProfileScreen() {
     queryClient.clear();
   };
 
-  const pendingSyncRef = useRef(false);
-  const [toast, setToast] = useState<{ title: string; variant: 'success' | 'error' | 'default' } | null>(null);
-
-  const log = (msg: string) => console.log('[SUB]', new Date().toLocaleTimeString(), msg);
-
-  const syncStatus = async () => {
-    log('sync: buscando /me…');
-    setIsSyncing(true);
-    try {
-      const res = await authApi.me();
-      setUser(res.data);
-      useUserStore.getState().updateFromApi(res.data);
-      const ativo = res.data.has_infinite_lives;
-      log(`sync OK: premium=${ativo} lives=${res.data.lives}`);
-      setToast({
-        title: ativo ? 'Sua assinatura está ativa' : 'Sem assinatura ativa',
-        variant: 'default',
-      });
-    } catch (e: any) {
-      log(`sync ERRO: ${e?.message ?? 'desconhecido'}`);
-      setToast({ title: 'Não foi possível atualizar o status', variant: 'error' });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Quando o app volta ao primeiro plano após abrir o site de assinatura,
-  // re-sincroniza o status. Só dispara numa transição real background → active
-  // (evita um 'active' espúrio que o Android emite ao abrir o Custom Tab).
-  const appStateRef = useRef(AppState.currentState);
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
-      const prev = appStateRef.current;
-      appStateRef.current = next;
-      const voltouAoApp = /inactive|background/.test(prev) && next === 'active';
-      log(`AppState ${prev}→${next} pending=${pendingSyncRef.current} voltou=${voltouAoApp}`);
-      if (voltouAoApp && pendingSyncRef.current) {
-        pendingSyncRef.current = false;
-        log('AppState disparou sync');
-        syncStatus();
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
-  const handleOpenSubscription = async () => {
-    log('clicou Premium → abrindo navegador');
-    pendingSyncRef.current = true;
-    let result: WebBrowser.WebBrowserResult | undefined;
-    try {
-      result = await WebBrowser.openBrowserAsync(WEB_SUBSCRIPTION_URL);
-    } catch (e: any) {
-      pendingSyncRef.current = false;
-      log(`ERRO ao abrir navegador: ${e?.message ?? 'desconhecido'}`);
-      setToast({ title: 'Não foi possível abrir a página de assinatura', variant: 'error' });
-      return;
-    }
-    log(`navegador retornou (Promise): ${JSON.stringify(result)} pending=${pendingSyncRef.current}`);
-    // 'opened': no Android a aba abre num task separado e o app não sabe quando ela fecha.
-    // Mantemos pending=true e deixamos o AppState (background → active) disparar o sync.
-    // Em 'dismiss'/'cancel' (iOS, ou quando a Promise reflete o fechamento) sincronizamos aqui.
-    if (result?.type !== 'opened' && pendingSyncRef.current) {
-      pendingSyncRef.current = false;
-      log('fallback Promise → sync');
-      await syncStatus();
-    }
-  };
-
   const appearanceOptions: { key: 'light' | 'dark' | 'system'; label: string; icon: React.ElementType }[] = [
     { key: 'light', label: 'Claro', icon: Sun },
     { key: 'dark', label: 'Escuro', icon: Moon },
@@ -171,9 +96,19 @@ export function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
     <ScrollView style={{ backgroundColor: theme.background }}>
-      {/* Card do usuário */}
+      {/* Card do usuário: o avatar no palco, como no perfil da web */}
       <View style={[styles.userCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Avatar name={name ?? ''} uri={avatar ?? undefined} size={80} style={styles.avatarLarge} />
+        <AvatarStage config={avatarConfig} name={name ?? ''} style={styles.avatarStage}>
+          <Pressable
+            style={[styles.editAvatarButton, { backgroundColor: isDark ? colors.gray[800] : '#ffffff', borderColor: isDark ? colors.gray[700] : colors.gray[200] }]}
+            onPress={() => navigation.navigate('AvatarEditor')}
+            accessibilityRole="button"
+            accessibilityLabel="Editar avatar"
+          >
+            <Pencil size={14} color={isDark ? colors.gray[300] : colors.gray[600]} />
+            <Text style={[styles.editAvatarText, { color: isDark ? colors.gray[300] : colors.gray[600] }]}>Editar</Text>
+          </Pressable>
+        </AvatarStage>
         <Text style={[styles.userName, { color: theme.foreground }]}>{name ?? 'Usuário'}</Text>
         <Text style={[styles.userEmail, { color: colors.gray[500] }]}>{user?.email}</Text>
       </View>
@@ -393,11 +328,22 @@ const styles = StyleSheet.create({
   userCard: {
     alignItems: 'center',
     margin: 16,
-    padding: 24,
+    padding: 12,
+    paddingBottom: 20,
     borderRadius: 16,
     borderWidth: 1,
   },
-  avatarLarge: { marginBottom: 12 },
+  avatarStage: { alignSelf: 'stretch', marginBottom: 14 },
+  editAvatarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 2,
+  },
+  editAvatarText: { fontSize: 12, fontWeight: '700' },
   userName: { fontSize: 20, fontWeight: '700' },
   userEmail: { fontSize: 14, marginTop: 4 },
   section: { marginHorizontal: 16, marginBottom: 20 },

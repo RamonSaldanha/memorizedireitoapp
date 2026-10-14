@@ -2,18 +2,20 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { Heart, Gem, InfinityIcon, Flame } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { colors } from '../../theme/colors';
 import { useUserStore } from '../../stores/userStore';
 import { useAppearance } from '../../hooks/useAppearance';
 import { Avatar } from '../ui/Avatar';
-import type { PlayStackParamList } from '../../navigation/AppTabs';
+import type { PlayStackParamList, TabParamList } from '../../navigation/AppTabs';
 
-type Nav = NativeStackNavigationProp<PlayStackParamList>;
+// O header vive nas telas do jogo, mas o avatar leva para outra aba (Perfil).
+type Nav = CompositeNavigationProp<NativeStackNavigationProp<PlayStackParamList>, BottomTabNavigationProp<TabParamList>>;
 
 export function AppHeader() {
-  const { lives, hasInfiniteLives, xp, currentStreak, name, avatar } = useUserStore();
+  const { lives, hasInfiniteLives, xp, currentStreak, name, avatarConfig } = useUserStore();
   const { isDark, theme } = useAppearance();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
@@ -78,6 +80,16 @@ export function AppHeader() {
           <Gem size={24} color={colors.blue[500]} />
         </Pressable>
       )}
+
+      {/* Avatar, na ponta direita como no menu do topo da web; leva ao perfil */}
+      <Pressable
+        style={styles.avatarButton}
+        onPress={() => navigation.navigate('Perfil')}
+        accessibilityRole="button"
+        accessibilityLabel="Abrir perfil"
+      >
+        <Avatar config={avatarConfig} name={name ?? ''} size={32} />
+      </Pressable>
     </View>
   );
 }
@@ -111,4 +123,5 @@ const styles = StyleSheet.create({
   xpBadgeText: { fontSize: 12, fontWeight: '700' },
   xpValue: { fontSize: 15, fontWeight: '700' },
   gemButton: { padding: 4 },
+  avatarButton: { marginLeft: 'auto' },
 });

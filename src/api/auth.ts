@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { AvatarConfig } from '../lib/avatar';
 
 export type UserData = {
   id: number;
@@ -11,7 +12,9 @@ export type UserData = {
   longest_streak: number;
   is_admin: boolean;
   email_verified_at: string | null;
-  avatar: string | null;
+  // Nulo para quem nunca montou o avatar (o app mostra as iniciais). Opcional
+  // porque servidor sem o campo também tem de funcionar.
+  avatar_config?: Partial<AvatarConfig> | null;
 };
 
 export const authApi = {
