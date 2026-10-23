@@ -97,8 +97,20 @@ export type SubmitPayload = {
   phase_block_uuids?: string[];
 };
 
+/**
+ * Acertos necessários para passar num bloco (espelha UserSegmentProgress::requiredCorrect
+ * no servidor): pode errar no máximo 1 lacuna (1 lacuna exige o acerto), nunca acima dos
+ * 70% da regra antiga.
+ */
+export function requiredCorrect(totalGaps: number): number {
+  if (totalGaps <= 0) return 0;
+  if (totalGaps === 1) return 1;
+  return Math.min(totalGaps - 1, Math.ceil(totalGaps * 0.7));
+}
+
 export type SubmitResponse = {
   success: boolean;
+  passed?: boolean;
   progress: {
     is_completed: boolean;
     best_score: number;

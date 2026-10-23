@@ -16,7 +16,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeft } from 'lucide-react-native';
-import { playApi, type PhaseDetail, type ActiveSegment, type CompletedSegment, type SegmentAnswer, type DisciplineLevelUp } from '../../api/play';
+import { playApi, requiredCorrect, type PhaseDetail, type ActiveSegment, type CompletedSegment, type SegmentAnswer, type DisciplineLevelUp } from '../../api/play';
 import { useUserStore } from '../../stores/userStore';
 import { GameButton } from '../../components/ui/GameButton';
 import { AppHeader } from '../../components/layout/AppHeader';
@@ -145,7 +145,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
       // Sincroniza HUD
       if (r.user) updateFromApi(r.user);
 
-      const passed = r.progress.percentage >= 70;
+      const passed = r.passed ?? correctCount >= requiredCorrect(answers.length);
 
       if (passed) {
         // Feedback sensorial
@@ -196,7 +196,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
         queryClient.invalidateQueries({ queryKey: ['disciplines'] });
       } else {
         setLostLifeMessage(
-          `Você precisa acertar pelo menos 70%. Acertou ${correctCount} de ${answers.length}.`,
+          `Você precisava acertar pelo menos ${requiredCorrect(answers.length)} de ${answers.length}. Acertou ${correctCount}.`,
         );
         // Reset depois de breve display do erro
         await new Promise((resolve) => setTimeout(resolve, 1200));

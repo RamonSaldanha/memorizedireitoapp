@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import type { ActiveSegment, SegmentAnswer } from '../../api/play';
+import { requiredCorrect, type ActiveSegment, type SegmentAnswer } from '../../api/play';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
 
@@ -74,7 +74,7 @@ export function ActiveChallenge({
   }, [verificationResults]);
 
   const correctCount = verificationResults.filter((r) => r.is_correct).length;
-  const minToPass = Math.ceil(segment.total_gaps * 0.7);
+  const minToPass = requiredCorrect(segment.total_gaps);
   const passed = correctCount >= minToPass;
   const percentage =
     segment.total_gaps > 0 ? Math.round((correctCount / segment.total_gaps) * 100) : 0;
