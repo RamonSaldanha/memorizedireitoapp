@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, FileCheck, Target, Trophy, X, Zap } from 'lucide-react-native';
+import { Check, FileCheck, Target, X, Zap } from 'lucide-react-native';
+
+// A mesma animação da web (public/img/vencedora.gif): a estudante comemorando no notebook
+const WINNER = require('../../../assets/img/vencedora.gif');
+// 418 × 627 px
+const WINNER_RATIO = 418 / 627;
 import { GameButton } from '../ui/GameButton';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
@@ -152,9 +157,8 @@ export function PhaseComplete({
   return (
     <View style={styles.completeWrap}>
       <View style={styles.completeHero}>
-        <View style={[styles.trophy, { backgroundColor: isDark ? '#3b2f05' : colors.amber[100] }]}>
-          <Trophy size={72} color={colors.amber[500]} strokeWidth={2} />
-        </View>
+        <Image source={WINNER} style={styles.winner} resizeMode="contain" accessibilityIgnoresInvertColors />
+
         <Text style={[styles.completeTitle, { color: isDark ? '#fff' : colors.gray[900] }]}>{title}</Text>
         <Text style={[styles.completeText, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>
           Você está um passo mais perto da aprovação.
@@ -404,8 +408,9 @@ const styles = StyleSheet.create({
 
   completeWrap: { flex: 1, paddingHorizontal: 20, paddingBottom: 24 },
   completeHero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
-  trophy: { width: 150, height: 150, borderRadius: 75, alignItems: 'center', justifyContent: 'center' },
-  completeTitle: { marginTop: 20, fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  // Altura da web (h-56); a largura segue a proporção da imagem
+  winner: { height: 224, width: 224 * WINNER_RATIO },
+  completeTitle: { marginTop: 16, fontSize: 24, fontWeight: '800', textAlign: 'center' },
   completeText: { marginTop: 8, fontSize: 16, textAlign: 'center' },
   stats: { flexDirection: 'row', borderWidth: 2, borderRadius: 16 },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 },
