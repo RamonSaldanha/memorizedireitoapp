@@ -315,7 +315,7 @@ export function ProfileScreen() {
             <View style={styles.rowContent}>
               <Text style={[styles.rowLabel, { color: theme.foreground }]}>Som ao acertar</Text>
               <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
-                Toca um sino quando você acerta um desafio
+                Toca um som quando você acerta um desafio
               </Text>
             </View>
             <Switch
