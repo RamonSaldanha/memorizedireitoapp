@@ -3,6 +3,8 @@ import type { AvatarConfig } from '../lib/avatar';
 
 export type RankingUser = {
   id: number;
+  // Abre o perfil público; servidor antigo não manda
+  uuid?: string;
   first_name: string;
   last_name: string;
   xp: number;

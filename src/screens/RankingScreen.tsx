@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
 import { Crown, Medal, Zap, Flame, TrendingUp, Trophy } from 'lucide-react-native';
 import { rankingApi, RankingUser } from '../api/ranking';
 import { Avatar } from '../components/ui/Avatar';
@@ -64,6 +65,12 @@ function getNameIcon(position: number) {
 export function RankingScreen() {
   const [period, setPeriod] = useState<Period>('all');
   const { isDark, theme } = useAppearance();
+  const navigation = useNavigation<{ navigate: (screen: 'PublicProfile', params: { uuid: string }) => void }>();
+
+  // Cada linha abre o perfil público da pessoa (servidor antigo não manda o uuid)
+  const openProfile = (user: RankingUser) => {
+    if (user.uuid) navigation.navigate('PublicProfile', { uuid: user.uuid });
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['ranking', period],
@@ -160,20 +167,29 @@ export function RankingScreen() {
           contentContainerStyle={styles.list}
           ListFooterComponent={
             showCurrentUserAtBottom ? (
-              <CurrentUserFooter
-                user={currentUserData}
-                isDark={isDark}
-                theme={theme}
-              />
+              <Pressable onPress={() => openProfile(currentUserData)} accessibilityRole="button">
+                <CurrentUserFooter
+                  user={currentUserData}
+                  isDark={isDark}
+                  theme={theme}
+                />
+              </Pressable>
             ) : null
           }
           renderItem={({ item }) => (
-            <RankingRow
-              user={item}
-              isCurrentUser={item.is_current_user}
-              isDark={isDark}
-              theme={theme}
-            />
+            <Pressable
+              onPress={() => openProfile(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`Abrir o perfil de ${item.first_name}`}
+              style={({ pressed }) => pressed && { opacity: 0.7 }}
+            >
+              <RankingRow
+                user={item}
+                isCurrentUser={item.is_current_user}
+                isDark={isDark}
+                theme={theme}
+              />
+            </Pressable>
           )}
         />
       )}

@@ -54,6 +54,8 @@ export type ActiveSegment = {
   lacunas: Lacuna[];
   options: string[];
   total_gaps: number;
+  // Rótulo do dispositivo vetado ou revogado (bloco só com "IX-A -;", "Art. 194."); nulo nos demais
+  historical_label?: string | null;
 };
 
 export type SegmentAnswer = {
@@ -74,6 +76,7 @@ export type CompletedSegment = {
   answers: SegmentAnswer[] | null;
   is_completed: boolean;
   best_score: number;
+  historical_label?: string | null;
 };
 
 export type PhaseDetail = {
@@ -134,6 +137,9 @@ export type DisciplineLevelUp = {
   color: string;
   old_level: number;
   new_level: number;
+  // Conquistas com estrelas: quantas a disciplina tem agora e a arte do badge (nula sem arte nova)
+  stars?: number;
+  badge_url?: string | null;
 };
 
 export type LoadMoreAboveResponse = {

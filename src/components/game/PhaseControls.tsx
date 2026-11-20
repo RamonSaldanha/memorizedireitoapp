@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RefreshCw } from 'lucide-react-native';
 import { GameButton } from '../ui/GameButton';
+import { WordChip, EmptyWordSlot } from './WordChip';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
 
@@ -17,6 +18,9 @@ type Props = {
   onVerify: () => void;
   // O onboarding põe os controles no rodapé dele, com o fundo da página.
   style?: StyleProp<ViewStyle>;
+  // Banco fixo, como na web: todas as palavras no lugar delas, a usada deixa o lugar vazio.
+  // Sem ele, o banco mostra só as palavras disponíveis (`options`).
+  bank?: { options: string[]; used: Set<number>; onSelect: (index: number) => void };
 };
 
 export function PhaseControls({
@@ -29,6 +33,7 @@ export function PhaseControls({
   onClear,
   onVerify,
   style,
+  bank,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { isDark, theme } = useAppearance();
@@ -40,7 +45,18 @@ export function PhaseControls({
     <View style={[styles.wrap, { paddingBottom: bottomPad, backgroundColor: theme.background, borderTopColor: theme.border }, style]}>
       {!verified ? (
         <>
-          {hasLacunas && options.length > 0 && (
+          {hasLacunas && bank && (
+            <View style={styles.pillsRow}>
+              {bank.options.map((word, idx) =>
+                bank.used.has(idx) ? (
+                  <EmptyWordSlot key={`${word}-${idx}`} word={word} />
+                ) : (
+                  <WordChip key={`${word}-${idx}`} word={word} onPress={() => bank.onSelect(idx)} />
+                ),
+              )}
+            </View>
+          )}
+          {hasLacunas && !bank && options.length > 0 && (
             <View style={styles.pillsRow}>
               {options.map((word, idx) => (
                 <GameButton

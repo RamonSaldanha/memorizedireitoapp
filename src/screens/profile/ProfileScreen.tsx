@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
-import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2, Gem, ChevronRight, Pencil } from 'lucide-react-native';
+import { User, Mail, Lock, LogOut, Sun, Moon, Monitor, Volume2, Gem, ChevronRight, Pencil, Quote, Eye, BellRing, Trash2 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserStore } from '../../stores/userStore';
 import { profileApi } from '../../api/profile';
@@ -25,7 +25,8 @@ import { Toast } from '../../components/ui/Toast';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useSubscriptionCheckout } from '../../hooks/useSubscriptionCheckout';
 import { colors } from '../../theme/colors';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ProfileSettings } from '../../api/profile';
 import { usePreferencesStore } from '../../stores/preferencesStore';
 import type { ProfileStackParamList } from '../../navigation/AppTabs';
 
@@ -39,13 +40,65 @@ export function ProfileScreen() {
   const { successSoundEnabled, setSuccessSoundEnabled } = usePreferencesStore();
   const queryClient = useQueryClient();
 
-  const [editField, setEditField] = useState<'name' | 'email' | null>(null);
+  const [editField, setEditField] = useState<'name' | 'email' | 'bio' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Descrição, conquistas no perfil público e e-mails de lembrete (como em Configurações da web)
+  const { data: settings, refetch: refetchSettings } = useQuery({
+    queryKey: ['profile-settings'],
+    queryFn: async () => (await profileApi.settings()).data,
+  });
+
+  const setSettings = (next: ProfileSettings) => queryClient.setQueryData(['profile-settings'], next);
+
+  const toggleAchievement = async (id: number, visible: boolean) => {
+    if (!settings) return;
+    const hidden = settings.achievements.filter((a) => (a.id === id ? !visible : a.hidden)).map((a) => a.id);
+    setSettings({ ...settings, achievements: settings.achievements.map((a) => (a.id === id ? { ...a, hidden: !visible } : a)) });
+    try {
+      setSettings((await profileApi.updateAchievements(hidden)).data);
+    } catch {
+      refetchSettings();
+      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+    }
+  };
+
+  const toggleEmails = async (receives: boolean) => {
+    if (!settings) return;
+    setSettings({ ...settings, receives_emails: receives });
+    try {
+      setSettings((await profileApi.updateEmails(receives)).data);
+    } catch {
+      refetchSettings();
+      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await profileApi.deleteAccount(deletePassword);
+      setIsDeleteModalVisible(false);
+      await logout();
+      queryClient.clear();
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      setDeleteError(status === 422 ? 'Senha incorreta.' : 'Não foi possível excluir agora. Tente novamente.');
+    } finally {
+      setDeleting(false);
+    }
+  };
   const { openSubscription: handleOpenSubscription, isSyncing, toast, setToast } = useSubscriptionCheckout();
 
   const updateMutation = useMutation({
-    mutationFn: (data: { name?: string; email?: string }) =>
+    mutationFn: (data: { name?: string; email?: string; bio?: string | null }) =>
       profileApi.updateProfile(data),
     onSuccess: (res) => {
       setUser(res.data);
@@ -53,6 +106,7 @@ export function ProfileScreen() {
         useUserStore.getState().setName(res.data.name);
       }
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      if (editField === 'bio') refetchSettings();
       setEditField(null);
       if (editField === 'email') {
         Alert.alert('E-mail atualizado', 'Seu endereço de e-mail foi alterado.');
@@ -64,6 +118,11 @@ export function ProfileScreen() {
   });
 
   const handleSaveEdit = () => {
+    // A descrição pode ficar vazia: apaga
+    if (editField === 'bio') {
+      updateMutation.mutate({ bio: editValue.trim() || null });
+      return;
+    }
     if (!editValue.trim()) {
       Alert.alert('Erro', 'O campo não pode ficar vazio.');
       return;
@@ -75,8 +134,8 @@ export function ProfileScreen() {
     }
   };
 
-  const openEdit = (field: 'name' | 'email') => {
-    setEditValue(field === 'name' ? (name ?? '') : (user?.email ?? ''));
+  const openEdit = (field: 'name' | 'email' | 'bio') => {
+    setEditValue(field === 'name' ? (name ?? '') : field === 'bio' ? (settings?.bio ?? '') : (user?.email ?? ''));
     setEditField(field);
   };
 
@@ -141,6 +200,55 @@ export function ProfileScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* Seção Perfil público */}
+      {settings ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.gray[500] }]}>PERFIL PÚBLICO</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Pressable style={styles.row} onPress={() => openEdit('bio')}>
+              <Quote size={20} color={colors.gray[500]} />
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowLabel, { color: theme.foreground }]}>Descrição</Text>
+                <Text style={[styles.rowValue, { color: colors.gray[500] }]} numberOfLines={2}>
+                  {settings.bio ?? 'Uma frase para quem visitar seu perfil'}
+                </Text>
+              </View>
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <Pressable style={styles.row} onPress={() => navigation.navigate('PublicProfile', { uuid: settings.profile_uuid })}>
+              <Eye size={20} color={colors.gray[500]} />
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowLabel, { color: theme.foreground }]}>Ver meu perfil público</Text>
+                <Text style={[styles.rowValue, { color: colors.gray[500] }]}>Como os outros veem você pelo ranking</Text>
+              </View>
+              <ChevronRight size={18} color={colors.gray[400]} />
+            </Pressable>
+            {settings.achievements.length > 0 ? (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                <Text style={[styles.subheading, { color: colors.gray[500] }]}>Conquistas que aparecem no perfil</Text>
+                {settings.achievements.map((achievement) => (
+                  <View key={achievement.id} style={styles.row}>
+                    <View style={styles.rowContent}>
+                      <Text style={[styles.rowLabel, { color: theme.foreground }]}>{achievement.name}</Text>
+                      <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
+                        {achievement.stars} {achievement.stars === 1 ? 'estrela' : 'estrelas'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={!achievement.hidden}
+                      onValueChange={(visible) => toggleAchievement(achievement.id, visible)}
+                      trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
+                      thumbColor={!achievement.hidden ? colors.purple[600] : colors.gray[400]}
+                    />
+                  </View>
+                ))}
+              </>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       {/* Seção Assinatura */}
       <View style={styles.section}>
@@ -217,6 +325,26 @@ export function ProfileScreen() {
               thumbColor={successSoundEnabled ? colors.purple[600] : colors.gray[400]}
             />
           </View>
+          {settings ? (
+            <>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.row}>
+                <BellRing size={20} color={colors.gray[500]} />
+                <View style={styles.rowContent}>
+                  <Text style={[styles.rowLabel, { color: theme.foreground }]}>E-mails de lembrete</Text>
+                  <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
+                    Um e-mail com presente quando você fica um tempo sem estudar
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.receives_emails}
+                  onValueChange={toggleEmails}
+                  trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
+                  thumbColor={settings.receives_emails ? colors.purple[600] : colors.gray[400]}
+                />
+              </View>
+            </>
+          ) : null}
         </View>
       </View>
 
@@ -232,6 +360,19 @@ export function ProfileScreen() {
           <LogOut size={18} color="#fff" />
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Sair</Text>
         </GameButton>
+
+        <Pressable
+          style={styles.deleteLink}
+          onPress={() => {
+            setDeletePassword('');
+            setDeleteError(null);
+            setIsDeleteModalVisible(true);
+          }}
+          accessibilityRole="button"
+        >
+          <Trash2 size={16} color={colors.red[500]} />
+          <Text style={styles.deleteLinkText}>Excluir conta</Text>
+        </Pressable>
       </View>
 
       {/* Modal de edição */}
@@ -242,8 +383,13 @@ export function ProfileScreen() {
       >
         <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
           <Text style={[styles.modalTitle, { color: theme.foreground }]}>
-            {editField === 'name' ? 'Editar nome' : 'Editar e-mail'}
+            {editField === 'name' ? 'Editar nome' : editField === 'bio' ? 'Descrição do perfil' : 'Editar e-mail'}
           </Text>
+          {editField === 'bio' ? (
+            <Text style={[styles.modalSubtitle, { color: colors.gray[500] }]}>
+              Aparece no seu perfil público. Até 160 caracteres.
+            </Text>
+          ) : null}
           <TextInput
             style={[
               styles.input,
@@ -255,11 +401,16 @@ export function ProfileScreen() {
             ]}
             value={editValue}
             onChangeText={setEditValue}
-            placeholder={editField === 'name' ? 'Seu nome' : 'seu@email.com'}
+            placeholder={editField === 'name' ? 'Seu nome' : editField === 'bio' ? 'Ex.: Estudo para a OAB' : 'seu@email.com'}
             placeholderTextColor={colors.gray[400]}
-            autoCapitalize={editField === 'name' ? 'words' : 'none'}
+            autoCapitalize={editField === 'name' ? 'words' : editField === 'bio' ? 'sentences' : 'none'}
             keyboardType={editField === 'email' ? 'email-address' : 'default'}
+            maxLength={editField === 'bio' ? 160 : undefined}
+            multiline={editField === 'bio'}
           />
+          {editField === 'bio' ? (
+            <Text style={[styles.counter, { color: colors.gray[400] }]}>{editValue.length}/160</Text>
+          ) : null}
           <View style={styles.modalActions}>
             <Pressable style={styles.modalButtonSecondary} onPress={() => setEditField(null)}>
               <Text style={{ color: colors.gray[500] }}>Cancelar</Text>
@@ -269,6 +420,45 @@ export function ProfileScreen() {
               onPress={handleSaveEdit}
             >
               <Text style={{ color: '#fff', fontWeight: '700' }}>Salvar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Excluir conta: pede a senha e avisa que não tem volta */}
+      <Modal
+        isVisible={isDeleteModalVisible}
+        onBackdropPress={() => setIsDeleteModalVisible(false)}
+        onBackButtonPress={() => setIsDeleteModalVisible(false)}
+      >
+        <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <Text style={[styles.modalTitle, { color: theme.foreground }]}>Excluir conta</Text>
+          <Text style={[styles.modalSubtitle, { color: colors.gray[500] }]}>
+            Sua conta, seu progresso e seu XP serão apagados de vez. Isso não pode ser desfeito. Digite sua senha para confirmar.
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              { backgroundColor: isDark ? colors.gray[900] : colors.gray[100], color: theme.foreground, borderColor: theme.border },
+            ]}
+            value={deletePassword}
+            onChangeText={setDeletePassword}
+            placeholder="Sua senha"
+            placeholderTextColor={colors.gray[400]}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
+          <View style={styles.modalActions}>
+            <Pressable style={styles.modalButtonSecondary} onPress={() => setIsDeleteModalVisible(false)}>
+              <Text style={{ color: colors.gray[500] }}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.modalButtonPrimary, { backgroundColor: colors.red[600], opacity: deletePassword && !deleting ? 1 : 0.5 }]}
+              onPress={handleDeleteAccount}
+              disabled={!deletePassword || deleting}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>{deleting ? 'Excluindo...' : 'Excluir de vez'}</Text>
             </Pressable>
           </View>
         </View>
@@ -377,6 +567,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   appearanceLabel: { fontSize: 13 },
+  subheading: { fontSize: 12, fontWeight: '700', paddingHorizontal: 16, paddingTop: 12 },
+  counter: { fontSize: 12, textAlign: 'right', marginTop: -10, marginBottom: 12 },
+  deleteLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, paddingVertical: 8 },
+  deleteLinkText: { color: colors.red[500], fontWeight: '700', fontSize: 14 },
+  deleteError: { color: colors.red[600], fontSize: 13, marginTop: -8, marginBottom: 12 },
   modalContent: {
     borderRadius: 16,
     padding: 20,

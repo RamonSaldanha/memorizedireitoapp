@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
 import { TrendingUp, BookOpen } from 'lucide-react-native';
 import { disciplinesApi, DisciplineProgress } from '../api/disciplines';
-import { DisciplineBadge } from '../components/ui/DisciplineBadge';
+import { StarBadge, StarRow } from '../components/ui/StarBadge';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
 import type { ThemeTokens } from '../stores/appearanceStore';
@@ -40,8 +40,11 @@ export function DisciplinesScreen() {
 
   const globalLevel = data?.global_level;
   const allDisciplines = data?.discipline_progress ?? [];
-  const active = allDisciplines.filter((d) => d.total_xp > 0);
-  const inactive = allDisciplines.filter((d) => d.total_xp === 0);
+  // Como na web: as que têm estrela, das mais estreladas para as menos; as outras, para desbloquear
+  const active = allDisciplines
+    .filter((d) => d.stars > 0)
+    .sort((a, b) => b.stars - a.stars || b.total_xp - a.total_xp);
+  const inactive = allDisciplines.filter((d) => d.stars === 0);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
@@ -179,7 +182,9 @@ function DisciplineCard({
   theme: ThemeTokens;
   locked: boolean;
 }) {
-  const barWidth = Math.max(discipline.progress_percent, locked ? 0 : 3);
+  // XP total em relação à próxima estrela, a mesma medida do texto embaixo
+  const nextStarPercent = discipline.next_star_xp === null ? 100 : Math.min(100, (discipline.total_xp / Math.max(1, discipline.next_star_xp)) * 100);
+  const barWidth = Math.max(nextStarPercent, locked ? 0 : 3);
 
   return (
     <View style={[
@@ -195,14 +200,15 @@ function DisciplineCard({
         opacity: locked ? 0.6 : 1,
       },
     ]}>
-      {/* Extra paddingBottom absorbs the shield's -8px overflow */}
-      <View style={{ paddingBottom: 8 }}>
-        <DisciplineBadge
+      {/* Extra paddingBottom absorbs the old shield's -8px overflow */}
+      <View style={{ paddingBottom: discipline.badge_url ? 0 : 8 }}>
+        <StarBadge
+          badgeUrl={discipline.badge_url}
+          name={discipline.name}
+          stars={locked ? 0 : discipline.stars}
           icon={discipline.icon}
           color={discipline.color}
-          level={locked ? 0 : discipline.level}
-          locked={locked}
-          isDark={isDark}
+          size={128}
         />
       </View>
 
@@ -216,6 +222,8 @@ function DisciplineCard({
         {discipline.name}
       </Text>
 
+      {!locked ? <View style={{ marginTop: 6 }}><StarRow stars={discipline.stars} /></View> : null}
+
       <View style={[styles.progressTrack, { backgroundColor: isDark ? colors.gray[700] : colors.gray[100] }]}>
         {!locked && (
           <View style={[styles.progressFill, { width: `${barWidth}%`, backgroundColor: discipline.color }]} />
@@ -223,10 +231,9 @@ function DisciplineCard({
       </View>
 
       <Text style={[styles.xpText, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>
-        {locked
-          ? `0 / ${discipline.xp_for_next_level} XP`
-          : `${discipline.current_xp_in_level} / ${discipline.xp_for_next_level} XP`
-        }
+        {discipline.next_star_xp !== null
+          ? `${discipline.total_xp.toLocaleString('pt-BR')} / ${discipline.next_star_xp.toLocaleString('pt-BR')} XP`
+          : `${discipline.total_xp.toLocaleString('pt-BR')} XP`}
       </Text>
     </View>
   );

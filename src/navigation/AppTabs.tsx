@@ -9,11 +9,17 @@ import { useUserStore } from '../stores/userStore';
 import { hasAvatar } from '../lib/avatar';
 import { Avatar } from '../components/ui/Avatar';
 import { PlayMapScreen } from '../screens/play/PlayMapScreen';
+import { TrailMapScreen } from '../screens/trail/TrailMapScreen';
+import { TrailPhaseScreen } from '../screens/trail/TrailPhaseScreen';
+import { TrailChallengeScreen } from '../screens/trail/TrailChallengeScreen';
+import { TrailExamScreen } from '../screens/trail/TrailExamScreen';
+import { useAuthStore } from '../stores/authStore';
 import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { NoLivesScreen } from '../screens/play/NoLivesScreen';
 import { OfensivaScreen } from '../screens/OfensivaScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
 import { RankingScreen } from '../screens/RankingScreen';
+import { PublicProfileScreen } from '../screens/PublicProfileScreen';
 import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
@@ -24,17 +30,30 @@ export type PlayStackParamList = {
   PlayPhase: { phaseId: number };
   NoLives: undefined;
   Ofensiva: undefined;
+  // Mapa novo (quadrados): a fase, o desafio do quadrado e o Dia da prova
+  TrailPhase: { phaseId: number };
+  TrailChallenge: { key: string };
+  TrailExam: { key: string };
 };
+
+/** O mapa que o servidor manda mostrar (`map_version` em /me): o novo, de quadrados, ou o atual. */
+function PlayHome() {
+  const mapVersion = useAuthStore((s) => s.user?.map_version);
+  return mapVersion === 'squares' ? <TrailMapScreen /> : <PlayMapScreen />;
+}
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
 
 function PlayStackNavigator() {
   return (
     <PlayStack.Navigator screenOptions={{ headerShown: false }}>
-      <PlayStack.Screen name="PlayMap" component={PlayMapScreen} />
+      <PlayStack.Screen name="PlayMap" component={PlayHome} />
       <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
       <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
       <PlayStack.Screen name="Ofensiva" component={OfensivaScreen} />
+      <PlayStack.Screen name="TrailPhase" component={TrailPhaseScreen} />
+      <PlayStack.Screen name="TrailChallenge" component={TrailChallengeScreen} />
+      <PlayStack.Screen name="TrailExam" component={TrailExamScreen} />
     </PlayStack.Navigator>
   );
 }
@@ -43,6 +62,8 @@ export type ProfileStackParamList = {
   ProfileMain: undefined;
   ChangePassword: undefined;
   AvatarEditor: undefined;
+  // O próprio perfil público, como os outros o veem
+  PublicProfile: { uuid: string };
 };
 
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
@@ -53,7 +74,25 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <ProfileStack.Screen name="AvatarEditor" component={AvatarEditorScreen} />
+      <ProfileStack.Screen name="PublicProfile" component={PublicProfileScreen} />
     </ProfileStack.Navigator>
+  );
+}
+
+export type RankingStackParamList = {
+  RankingMain: undefined;
+  PublicProfile: { uuid: string };
+};
+
+const RankingStack = createNativeStackNavigator<RankingStackParamList>();
+
+/** Ranking e o perfil público de quem está nele. */
+function RankingStackNavigator() {
+  return (
+    <RankingStack.Navigator screenOptions={{ headerShown: false }}>
+      <RankingStack.Screen name="RankingMain" component={RankingScreen} />
+      <RankingStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+    </RankingStack.Navigator>
   );
 }
 
@@ -126,7 +165,7 @@ export function AppTabs() {
       />
       <Tab.Screen
         name="Ranking"
-        component={RankingScreen}
+        component={RankingStackNavigator}
         options={{
           tabBarIcon: ({ color }) => <Trophy size={26} color={color} />,
         }}

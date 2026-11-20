@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { requiredCorrect, type ActiveSegment, type SegmentAnswer } from '../../api/play';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
+import { WordChip } from './WordChip';
 
 type Props = {
   segment: ActiveSegment;
@@ -11,6 +12,10 @@ type Props = {
   verificationResults: SegmentAnswer[];
   onUnselect: (gapOrder: number) => void;
   onLayout?: (y: number) => void;
+  // A tela mostra o resultado por conta própria (barra de resultado do mapa novo)
+  hideResult?: boolean;
+  // Explica por que o bloco vetado ou revogado está vazio (só no mapa novo)
+  showHistorical?: boolean;
 };
 
 type Token =
@@ -59,6 +64,8 @@ export function ActiveChallenge({
   verificationResults,
   onUnselect,
   onLayout,
+  hideResult = false,
+  showHistorical = false,
 }: Props) {
   const { isDark } = useAppearance();
 
@@ -122,13 +129,15 @@ export function ActiveChallenge({
             );
           }
           if (!verified && filled) {
+            // A palavra tem a mesma cara do botão do banco; tocar devolve para ele
             return (
-              <Pressable key={i} onPress={() => onUnselect(t.gapOrder)}>
-                <View style={[styles.lacunaFilled, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#38bdf8' }]}>
-                  <Text style={[styles.lacunaFilledText, isDark && { color: '#e2e8f0' }]}>{filled}</Text>
-                  <Text style={[styles.lacunaRemove, isDark && { color: '#64748b' }]}>×</Text>
-                </View>
-              </Pressable>
+              <WordChip
+                key={i}
+                word={filled}
+                inGap
+                onPress={() => onUnselect(t.gapOrder)}
+                accessibilityLabel={`Tirar ${filled} da lacuna`}
+              />
             );
           }
           // verified
@@ -154,7 +163,13 @@ export function ActiveChallenge({
         })}
       </View>
 
-      {verified && segment.total_gaps > 0 && (
+      {showHistorical && segment.historical_label ? (
+        <Text style={[styles.historical, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
+          Dispositivo vetado ou revogado: o texto foi retirado da lei e fica aqui só como registro.
+        </Text>
+      ) : null}
+
+      {verified && !hideResult && segment.total_gaps > 0 && (
         <View style={styles.resultRow}>
           <View style={[styles.resultBadge, passed ? styles.resultBadgeOk : styles.resultBadgeFail]}>
             <Text style={[styles.resultBadgeIcon, passed ? styles.resultBadgeIconOk : styles.resultBadgeIconFail]}>
@@ -262,6 +277,8 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     textDecorationLine: 'line-through',
   },
+
+  historical: { marginTop: 4, fontSize: 14, fontWeight: '500' },
 
   resultRow: {
     flexDirection: 'row',

@@ -103,6 +103,8 @@ export function useChallengeBlock(article: ChallengeArticle, onSolved: () => voi
     solvedNow,
     userSelections: gaps.userSelections,
     availableOptions: gaps.availableOptions,
+    usedOptions: gaps.usedOptions,
+    selectOption: gaps.selectOption,
     allFilled: gaps.allFilled,
     select: gaps.fillNextEmpty,
     unselect: gaps.unselectGap,

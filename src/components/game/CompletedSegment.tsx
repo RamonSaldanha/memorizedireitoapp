@@ -47,7 +47,14 @@ function buildTokens(originalText: string, structuralMarker: string, answers: Se
   return filtered;
 }
 
-export function CompletedSegmentView({ segment }: { segment: CompletedSegmentData }) {
+export function CompletedSegmentView({
+  segment,
+  showHistorical = false,
+}: {
+  segment: CompletedSegmentData;
+  // Explica por que o bloco vetado ou revogado está vazio (só no mapa novo)
+  showHistorical?: boolean;
+}) {
   const { isDark } = useAppearance();
 
   const tokens = useMemo(
@@ -89,6 +96,11 @@ export function CompletedSegmentView({ segment }: { segment: CompletedSegmentDat
           return null;
         })}
       </Text>
+      {showHistorical && segment.historical_label ? (
+        <Text style={[styles.historical, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>
+          Dispositivo vetado ou revogado: o texto foi retirado da lei e fica aqui só como registro.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -116,6 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     fontSize: 16,
   },
+  historical: { marginTop: 4, fontSize: 14, fontWeight: '500' },
   correctionInline: {
     fontWeight: '700',
     paddingHorizontal: 8,

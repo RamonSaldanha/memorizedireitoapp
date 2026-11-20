@@ -63,7 +63,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
 
   const [verified, setVerified] = useState(false);
   const {
-    userSelections, setUserSelections, availableOptions, allFilled, fillNextEmpty, unselectGap, clearAll,
+    userSelections, setUserSelections, availableOptions, usedOptions, allFilled, selectOption, fillNextEmpty, unselectGap, clearAll,
   } = useGapSelections(active, verified);
   const [verificationResults, setVerificationResults] = useState<SegmentAnswer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -419,6 +419,7 @@ export function PlayPhaseScreen({ route, navigation }: Props) {
           onSelect={fillNextEmpty}
           onClear={clearAll}
           onVerify={handleVerify}
+          bank={{ options: active.options, used: usedOptions, onSelect: selectOption }}
         />
       )}
 

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { DisciplineBadge } from '../ui/DisciplineBadge';
+import { StarBadge } from '../ui/StarBadge';
 import type { DisciplineLevelUp } from '../../api/play';
 
 const { width } = Dimensions.get('window');
@@ -54,20 +55,42 @@ export function LevelUpOverlay({ levelUp, onDone, isDark = false }: Props) {
       {levelUp && (
         <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity }]}>
           <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
-            <Text style={styles.title}>Você subiu de nível!</Text>
-
-            <View style={styles.badgeWrap}>
-              <DisciplineBadge
-                icon={levelUp.icon}
-                color={levelUp.color}
-                level={levelUp.new_level}
-                isDark={isDark}
-              />
-            </View>
-
-            <Text style={styles.subtitle}>
-              Especialista nível {levelUp.new_level} em {levelUp.discipline_name}
-            </Text>
+            {levelUp.stars !== undefined ? (
+              // Conquistas com estrelas (servidor novo): a estrela ganha e o badge da disciplina
+              <>
+                <Text style={styles.title}>
+                  {levelUp.stars === 1 ? 'Você ganhou a primeira estrela!' : 'Você ganhou uma estrela!'}
+                </Text>
+                <View style={styles.badgeWrap}>
+                  <StarBadge
+                    badgeUrl={levelUp.badge_url}
+                    name={levelUp.discipline_name}
+                    stars={levelUp.stars}
+                    icon={levelUp.icon}
+                    color={levelUp.color}
+                    size={180}
+                  />
+                </View>
+                <Text style={styles.subtitle}>
+                  {levelUp.stars} {levelUp.stars === 1 ? 'estrela' : 'estrelas'} em {levelUp.discipline_name}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.title}>Você subiu de nível!</Text>
+                <View style={styles.badgeWrap}>
+                  <DisciplineBadge
+                    icon={levelUp.icon}
+                    color={levelUp.color}
+                    level={levelUp.new_level}
+                    isDark={isDark}
+                  />
+                </View>
+                <Text style={styles.subtitle}>
+                  Especialista nível {levelUp.new_level} em {levelUp.discipline_name}
+                </Text>
+              </>
+            )}
           </Animated.View>
 
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>

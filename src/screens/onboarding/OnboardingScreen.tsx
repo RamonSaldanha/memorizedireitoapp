@@ -524,6 +524,7 @@ export function OnboardingScreen() {
           onSelect={block.select}
           onClear={block.clear}
           onVerify={block.verify}
+          bank={{ options: block.segment.options, used: block.usedOptions, onSelect: block.selectOption }}
           style={{ backgroundColor: theme.page, borderTopWidth: 0 }}
         />
       ) : hasFooter && (step !== 'challenge' || challengeSolved) ? (
