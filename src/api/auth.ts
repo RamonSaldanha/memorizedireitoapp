@@ -21,9 +21,6 @@ export type UserData = {
   needs_onboarding?: boolean;
   // Oferta de boas-vindas (15% no anual) enquanto valem as 24h; vira o banner do mapa.
   welcome_offer?: WelcomeOffer | null;
-  // Qual mapa mostrar: o novo, de quadrados (/trail), ou o atual (/play/map). Quem decide é o
-  // servidor (TRAIL_AUDIENCE); sem o campo, vale o atual.
-  map_version?: 'squares' | 'classic';
 };
 
 export const authApi = {

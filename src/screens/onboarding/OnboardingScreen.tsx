@@ -227,7 +227,7 @@ export function OnboardingScreen() {
     try {
       await onboardingApi.saveTrail({ goal, area, minutes, legislation_ids: trail });
       // A trilha é a seleção de legislações do mapa.
-      queryClient.invalidateQueries({ queryKey: ['play-map'] });
+      queryClient.invalidateQueries({ queryKey: ['trail-map'] });
       next();
     } catch (err) {
       if (isAlreadyCompleted(err)) return leave();
@@ -312,7 +312,7 @@ export function OnboardingScreen() {
       const res = await onboardingApi.finish();
       setUser(res.data.user);
       updateFromApi(res.data.user);
-      queryClient.invalidateQueries({ queryKey: ['play-map'] });
+      queryClient.invalidateQueries({ queryKey: ['trail-map'] });
       queryClient.removeQueries({ queryKey: ['onboarding'] });
       // Aceitou a oferta: a página de assinatura do site já abre no anual com o desconto.
       if (nextPage === 'subscription' && res.data.user.welcome_offer) {

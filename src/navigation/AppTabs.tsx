@@ -8,13 +8,10 @@ import { useAppearance } from '../hooks/useAppearance';
 import { useUserStore } from '../stores/userStore';
 import { hasAvatar } from '../lib/avatar';
 import { Avatar } from '../components/ui/Avatar';
-import { PlayMapScreen } from '../screens/play/PlayMapScreen';
 import { TrailMapScreen } from '../screens/trail/TrailMapScreen';
 import { TrailPhaseScreen } from '../screens/trail/TrailPhaseScreen';
 import { TrailChallengeScreen } from '../screens/trail/TrailChallengeScreen';
 import { TrailExamScreen } from '../screens/trail/TrailExamScreen';
-import { useAuthStore } from '../stores/authStore';
-import { PlayPhaseScreen } from '../screens/play/PlayPhaseScreen';
 import { NoLivesScreen } from '../screens/play/NoLivesScreen';
 import { OfensivaScreen } from '../screens/OfensivaScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
@@ -26,29 +23,22 @@ import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 import { AvatarEditorScreen } from '../screens/profile/AvatarEditorScreen';
 
 export type PlayStackParamList = {
+  // O mapa de quadrados (o mesmo do beta da web) e os passos dele: a fase, o desafio do
+  // quadrado e o Dia da prova
   PlayMap: undefined;
-  PlayPhase: { phaseId: number };
   NoLives: undefined;
   Ofensiva: undefined;
-  // Mapa novo (quadrados): a fase, o desafio do quadrado e o Dia da prova
   TrailPhase: { phaseId: number };
   TrailChallenge: { key: string };
   TrailExam: { key: string };
 };
-
-/** O mapa que o servidor manda mostrar (`map_version` em /me): o novo, de quadrados, ou o atual. */
-function PlayHome() {
-  const mapVersion = useAuthStore((s) => s.user?.map_version);
-  return mapVersion === 'squares' ? <TrailMapScreen /> : <PlayMapScreen />;
-}
 
 const PlayStack = createNativeStackNavigator<PlayStackParamList>();
 
 function PlayStackNavigator() {
   return (
     <PlayStack.Navigator screenOptions={{ headerShown: false }}>
-      <PlayStack.Screen name="PlayMap" component={PlayHome} />
-      <PlayStack.Screen name="PlayPhase" component={PlayPhaseScreen} />
+      <PlayStack.Screen name="PlayMap" component={TrailMapScreen} />
       <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
       <PlayStack.Screen name="Ofensiva" component={OfensivaScreen} />
       <PlayStack.Screen name="TrailPhase" component={TrailPhaseScreen} />

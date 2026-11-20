@@ -115,7 +115,7 @@ export function NoLivesScreen({ navigation }: Props) {
       const res = await authApi.me();
       useAuthStore.getState().setUser(res.data);
       updateFromApi(res.data);
-      queryClient.invalidateQueries({ queryKey: ['play-map'] });
+      queryClient.invalidateQueries({ queryKey: ['trail-map'] });
       queryClient.invalidateQueries({ queryKey: ['disciplines'] });
       const ativo = res.data.has_infinite_lives;
       log(`sync OK: premium=${ativo} lives=${res.data.lives}`);
@@ -179,7 +179,7 @@ export function NoLivesScreen({ navigation }: Props) {
       const res = await playApi.rewardLife();
       if (res.data.success) {
         updateFromApi({ ...res.data.user, xp: currentXp });
-        queryClient.invalidateQueries({ queryKey: ['play-map'] });
+        queryClient.invalidateQueries({ queryKey: ['trail-map'] });
         queryClient.invalidateQueries({ queryKey: ['disciplines'] });
         navigation.navigate('PlayMap');
       } else {

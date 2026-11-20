@@ -17,7 +17,7 @@ The app's New Architecture is enabled (`app.json` → `newArchEnabled: true`), s
 ### Mobile companion to a web app
 This RN app (`memorize-mobile`) is a client for **Memorize Direito**, a study app for Brazilian law. It talks to the same Laravel backend as the web app at `https://memorizedireito.com/api/v1` — both `__DEV__` and prod hit production in [src/api/client.ts](src/api/client.ts). User-facing copy is in **Portuguese (pt-BR)**.
 
-The play screens are intentionally being aligned **pixel-perfect with the web version** (Vue). Layout constants in [src/screens/play/PlayMapScreen.tsx](src/screens/play/PlayMapScreen.tsx) (`VERTICAL_SPACING`, `X_PATTERN`, `PHASE_SIZE`) and the palette in [src/theme/colors.ts](src/theme/colors.ts) mirror the web's Tailwind config. See [plano-atualizacao.md](plano-atualizacao.md) for the in-progress map refactor plan and known visual deltas.
+The play screens are intentionally being aligned **pixel-perfect with the web version** (Vue). The map grid in [src/screens/trail/TrailMapScreen.tsx](src/screens/trail/TrailMapScreen.tsx) (`COLUMNS`, `COLUMN_PATTERN`, `ROW_STEP`) mirrors the web's `BetaPlay/Map.vue`, and the palette in [src/theme/colors.ts](src/theme/colors.ts) mirrors the web's Tailwind config.
 
 ### Boot sequence
 [App.tsx](App.tsx) wraps everything in `QueryClientProvider` (TanStack Query, `staleTime: 30s`, `retry: 1`) and renders `AppBootstrap`, which:
@@ -40,11 +40,11 @@ The split exists because gameplay endpoints return fresh `lives`/`xp` snapshots 
 
 ### Navigation shape
 - Root: native-stack with `Auth` | `App` (token-gated).
-- `AppTabs` (bottom tabs): `Jogar`, `Conquistas`, `Ranking`, `Leis`, `Perfil`. The `Jogar` tab embeds its own native-stack (`PlayStack`) with `PlayMap` → `PlayPhase` (current map) and `TrailPhase` / `TrailChallenge` / `TrailExam` (new map). `Ranking` and `Perfil` have stacks too, both with `PublicProfile`. When adding a new play-flow screen, add it to `PlayStackParamList` in [src/navigation/AppTabs.tsx](src/navigation/AppTabs.tsx); when adding a top-level destination, add a tab there.
+- `AppTabs` (bottom tabs): `Jogar`, `Conquistas`, `Ranking`, `Leis`, `Perfil`. The `Jogar` tab embeds its own native-stack (`PlayStack`) with `PlayMap` (the square map) → `TrailPhase` / `TrailChallenge` / `TrailExam`. `Ranking` and `Perfil` have stacks too, both with `PublicProfile`. When adding a new play-flow screen, add it to `PlayStackParamList` in [src/navigation/AppTabs.tsx](src/navigation/AppTabs.tsx); when adding a top-level destination, add a tab there.
 
 ### New map (squares)
 Port of the web's beta map (`BetaPlay/Map.vue`, `Phase.vue`, `Checkpoint.vue`, `Exam.vue`), through the `/trail` API routes ([src/api/trail.ts](src/api/trail.ts)). The server builds the data with the same methods as the web, so the rules live there (see the web project's CLAUDE.md, "Material de estudo" and "Mapa novo no app").
-- Which map: `PlayHome` in AppTabs shows [TrailMapScreen](src/screens/trail/TrailMapScreen.tsx) when `/me` says `map_version: 'squares'`, else the current `PlayMapScreen`. The server decides (`TRAIL_AUDIENCE`); no app build is needed to switch.
+- It is the app's only map: [TrailMapScreen](src/screens/trail/TrailMapScreen.tsx) replaced the old `/play/map` map (the old screens were removed on 19/11/2026). Every logged-in user can use `/trail`; on the web the beta stays admin-only. Older app builds keep using `/play/*`, which stays on the server.
 - Map: same grid as the web (6 columns of `U`, pattern center → right → center → left, `ROW_STEP` 2.6), squares of 4 phases plus the square challenge as 5th step, the Dia da prova beside the last square of each stage. The stage card sits above the scroll and shows the stage in the middle of the screen.
 - Phase ([TrailPhaseScreen](src/screens/trail/TrailPhaseScreen.tsx)): the whole phase stays on the device. A wrong block calls `/trail/fail` (life goes at once) and comes back blank; the end sends every block to `/trail/finish`. Leaving midway loses the phase.
 - Square challenge ([TrailChallengeScreen](src/screens/trail/TrailChallengeScreen.tsx)): summary with guided reading, then the questions; each step is saved on the server right away. The summary arrives as `summary_blocks` and [GuidedSummary](src/components/trail/GuidedSummary.tsx) draws it word by word (chunk or line mode, speed, tap a word to jump, hold to pause, 90% coverage to unlock "Concluir"). The web's panel can be dragged; here it is fixed at the bottom right.
@@ -53,7 +53,7 @@ Port of the web's beta map (`BetaPlay/Map.vue`, `Phase.vue`, `Checkpoint.vue`, `
 - Sounds: `assets/audio/correct.wav` and `phase-complete.wav` are the web's Web Audio chimes rendered to files ([useGameSounds](src/hooks/useGameSounds.ts)).
 
 ### Word bank
-Like the web: the bank keeps every word in its place, a used word leaves an empty slot ([WordChip / EmptyWordSlot](src/components/game/WordChip.tsx)) and the word in the gap has the same chip look; tapping it sends it back. [useGapSelections](src/hooks/useGapSelections.ts) remembers which bank button each gap came from. Pass `bank` to `PhaseControls` to get this layout (current map, new map and onboarding all do).
+Like the web: the bank keeps every word in its place, a used word leaves an empty slot ([WordChip / EmptyWordSlot](src/components/game/WordChip.tsx)) and the word in the gap has the same chip look; tapping it sends it back. [useGapSelections](src/hooks/useGapSelections.ts) remembers which bank button each gap came from. Pass `bank` to `PhaseControls` to get this layout (the map and the onboarding both do).
 
 ### Achievements and public profile
 - Conquistas uses stars (`stars`, `next_star_xp`, `badge_url` from `/disciplines`) with [StarBadge / StarRow](src/components/ui/StarBadge.tsx); a discipline without new art falls back to the old `DisciplineBadge`. `LevelUpOverlay` shows the star when the server sends `stars`.
@@ -72,7 +72,7 @@ Port of the web's `Onboarding/Index.vue` (same 8 steps, copy, colors and animati
 - Gating: `authStore.onboardingPending` (persisted in AsyncStorage `@onboarding_pending`, read in `initialize()` with the token) makes [RootNavigator](src/navigation/RootNavigator.tsx) show `Onboarding` instead of `App`. Finishing or skipping clears it; so do logout and a 401.
 - API: `/onboarding` (GET) and `/onboarding/{trail,challenge,offer,finish}` (POST) in [src/api/onboarding.ts](src/api/onboarding.ts). The POSTs return 409 once the onboarding is done; the screen then just leaves.
 - [src/lib/onboarding/quiz.ts](src/lib/onboarding/quiz.ts) is a **byte-for-byte copy** of the web's `resources/js/components/onboarding/quiz.ts` (questions, trail suggestion, challenge articles). Don't edit it here; change it on the web and copy it over. `demoAvatars.ts` is the web's landing avatars with only the import changed.
-- The challenge reuses `ActiveChallenge`, `PhaseControls` and `CompletedSegmentView`; word selection lives in [useGapSelections](src/hooks/useGapSelections.ts), shared with `PlayPhaseScreen` and `TrailPhaseScreen`.
+- The challenge reuses `ActiveChallenge`, `PhaseControls` and `CompletedSegmentView`; word selection lives in [useGapSelections](src/hooks/useGapSelections.ts), shared with `TrailPhaseScreen`.
 - Animations in [src/components/onboarding/motion.tsx](src/components/onboarding/motion.tsx) mirror the CSS keyframes of the web page (same curves, durations, delays) and respect "reduce motion".
 - The welcome offer (`welcome_offer` on `/me`) shows as [WelcomeOfferBanner](src/components/WelcomeOfferBanner.tsx) under the map header. "Garantir" opens the web subscription page, which already applies the discount on the yearly plan.
 

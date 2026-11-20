@@ -36,7 +36,7 @@ export function LegalReferencesScreen() {
   const saveMutation = useMutation({
     mutationFn: () => legalReferencesApi.updateSelection(selectedIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['play-map'] });
+      queryClient.invalidateQueries({ queryKey: ['trail-map'] });
       setToast({ title: 'Sucesso!', message: 'Suas preferências foram salvas.', variant: 'success' });
     },
     onError: () => {
