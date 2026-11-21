@@ -238,8 +238,8 @@ export function ProfileScreen() {
                     <Switch
                       value={!achievement.hidden}
                       onValueChange={(visible) => toggleAchievement(achievement.id, visible)}
-                      trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
-                      thumbColor={!achievement.hidden ? colors.purple[600] : colors.gray[400]}
+                      trackColor={{ false: colors.gray[300], true: family.choice }}
+                      thumbColor={!achievement.hidden ? family.choiceInk : colors.gray[400]}
                     />
                   </View>
                 ))}
@@ -335,8 +335,8 @@ export function ProfileScreen() {
                 <Switch
                   value={settings.receives_emails}
                   onValueChange={toggleEmails}
-                  trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
-                  thumbColor={settings.receives_emails ? colors.purple[600] : colors.gray[400]}
+                  trackColor={{ false: colors.gray[300], true: family.choice }}
+                  thumbColor={settings.receives_emails ? family.choiceInk : colors.gray[400]}
                 />
               </View>
             </>
@@ -474,7 +474,7 @@ export function ProfileScreen() {
       {isSyncing && (
         <View style={styles.syncOverlay}>
           <View style={[styles.syncCard, { backgroundColor: theme.card }]}>
-            <ActivityIndicator size="large" color={colors.purple[600]} />
+            <ActivityIndicator size="large" color={colors.family.brandEdge} />
             <Text style={[styles.syncText, { color: theme.foreground }]}>Atualizando…</Text>
           </View>
         </View>

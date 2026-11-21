@@ -51,7 +51,7 @@ export function TrailChallengeScreen({ route, navigation }: Props) {
             </GameButton>
           </>
         ) : (
-          <ActivityIndicator color={colors.purple[500]} size="large" />
+          <ActivityIndicator color={colors.family.brandEdge} size="large" />
         )}
       </SafeAreaView>
     );

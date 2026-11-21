@@ -68,10 +68,10 @@ export function AppHeader() {
 
       {/* XP badge-style */}
       <View style={styles.xpRow}>
-        <View style={[styles.xpBadge, { backgroundColor: isDark ? colors.gray[800] : colors.purple[100] }]}>
-          <Text style={[styles.xpBadgeText, { color: isDark ? colors.purple[400] : colors.purple[500] }]}>XP</Text>
+        <View style={[styles.xpBadge, { backgroundColor: isDark ? colors.family.dark.brandSoft : colors.family.light.brandSoft }]}>
+          <Text style={[styles.xpBadgeText, { color: isDark ? colors.family.dark.brandSoftInk : colors.family.light.brandSoftInk }]}>XP</Text>
         </View>
-        <Text style={[styles.xpValue, { color: isDark ? colors.purple[400] : colors.purple[500] }]}>{xp.toLocaleString('pt-BR')}</Text>
+        <Text style={[styles.xpValue, { color: isDark ? colors.family.brand : colors.family.light.brandSoftInk }]}>{xp.toLocaleString('pt-BR')}</Text>
       </View>
 
       {/* Gema (vidas infinitas) */}

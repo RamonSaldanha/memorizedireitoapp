@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 80,
     alignSelf: 'center',
-    backgroundColor: colors.purple[500],
+    backgroundColor: colors.family.brand,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   text: {
-    color: '#fff',
+    color: colors.family.brandInk,
     fontSize: 18,
     fontWeight: '800',
   },

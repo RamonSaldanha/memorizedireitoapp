@@ -237,7 +237,7 @@ export function TrailMapScreen() {
   if (isLoading && !data) {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]} edges={['left', 'right']}>
-        <ActivityIndicator size="large" color={colors.purple[500]} />
+        <ActivityIndicator size="large" color={colors.family.brandEdge} />
       </SafeAreaView>
     );
   }
@@ -369,7 +369,7 @@ export function TrailMapScreen() {
                       {/* Desafio publicado depois que a pessoa passou por aqui: fica por fazer, sem travar */}
                       {group.challenge.state === 'available' ? (
                         <View style={[styles.challengeDot, { borderColor: theme.background }]}>
-                          <BookOpenCheck size={14} color="#fff" strokeWidth={2.5} />
+                          <BookOpenCheck size={14} color={colors.family.brandInk} strokeWidth={2.5} />
                         </View>
                       ) : null}
                     </Node>
@@ -668,7 +668,7 @@ function Popover({ top, onClose, children, padded = false }: { top: number; onCl
 
 function PopoverRow({ label, action, tone, onPress }: { label: string; action: string; tone: 'green' | 'purple'; onPress: () => void }) {
   const { isDark } = useAppearance();
-  const color = tone === 'green' ? (isDark ? '#4ade80' : colors.green[600]) : isDark ? colors.purple[400] : colors.purple[600];
+  const color = tone === 'green' ? (isDark ? '#4ade80' : colors.green[600]) : isDark ? colors.family.brand : colors.family.light.brandSoftInk;
   return (
     <Pressable
       onPress={onPress}
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     borderWidth: 3,
-    backgroundColor: colors.purple[500],
+    backgroundColor: colors.family.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },

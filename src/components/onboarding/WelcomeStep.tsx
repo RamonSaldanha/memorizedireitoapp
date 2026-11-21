@@ -34,13 +34,13 @@ export function WelcomeStep({ firstName, isDark, theme, reduce }: Props) {
         <Float reduce={reduce} delay={500} style={styles.xpPill}>
           <ChunkyView
             radius={999}
-            shadowColor={isDark ? tw.purple900 : tw.purple200}
+            shadowColor={isDark ? colors.family.dark.brandSoft2 : colors.family.light.brandSoft2}
             style={[
               styles.pill,
-              { borderColor: isDark ? tw.purple900 : tw.purple200, backgroundColor: isDark ? colors.gray[800] : '#fff' },
+              { borderColor: isDark ? colors.family.dark.brandSoft2 : colors.family.light.brandSoft2, backgroundColor: isDark ? colors.family.dark.brandSoft : colors.family.light.brandSoft },
             ]}
           >
-            <Text style={[styles.pillText, { color: isDark ? tw.purple300 : tw.purple600 }]}>+25 XP</Text>
+            <Text style={[styles.pillText, { color: isDark ? colors.family.dark.brandSoftInk : colors.family.light.brandSoftInk }]}>+25 XP</Text>
           </ChunkyView>
         </Float>
         <Float reduce={reduce} delay={750} style={styles.streakPill}>

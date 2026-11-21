@@ -81,7 +81,7 @@ export function LegalReferencesScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={colors.purple[500]} />
+        <ActivityIndicator style={styles.loader} color={colors.family.brandEdge} />
       ) : filtered.length === 0 ? (
         <View style={styles.emptyState}>
           <FileSearch size={48} color={theme.mutedForeground} />

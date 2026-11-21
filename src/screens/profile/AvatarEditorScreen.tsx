@@ -227,7 +227,7 @@ export function AvatarEditorScreen() {
       {isSyncing && (
         <View style={styles.syncOverlay}>
           <View style={[styles.syncCard, { backgroundColor: theme.card }]}>
-            <ActivityIndicator size="large" color={colors.purple[600]} />
+            <ActivityIndicator size="large" color={colors.family.brandEdge} />
             <Text style={[styles.syncText, { color: theme.foreground }]}>Atualizando…</Text>
           </View>
         </View>

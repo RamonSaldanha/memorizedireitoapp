@@ -104,7 +104,7 @@ function ProfileTabIcon({ focused, color }: { focused: boolean; color: string })
   }
 
   return (
-    <View style={{ padding: 1, borderRadius: 999, borderWidth: 2, borderColor: focused ? colors.purple[600] : 'transparent' }}>
+    <View style={{ padding: 1, borderRadius: 999, borderWidth: 2, borderColor: focused ? colors.family.brand : 'transparent' }}>
       <Avatar config={avatarConfig} name={name ?? ''} size={24} />
     </View>
   );
@@ -136,7 +136,7 @@ export function AppTabs() {
           paddingBottom: 10,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: colors.purple[600],
+        tabBarActiveTintColor: isDark ? colors.family.brand : colors.family.light.brandSoftInk,
         tabBarInactiveTintColor: isDark ? colors.gray[500] : colors.gray[400],
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
       }}

@@ -35,7 +35,7 @@ export function DisciplinesScreen() {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-        <ActivityIndicator color={colors.purple[500]} size="large" />
+        <ActivityIndicator color={colors.family.brandEdge} size="large" />
       </SafeAreaView>
     );
   }

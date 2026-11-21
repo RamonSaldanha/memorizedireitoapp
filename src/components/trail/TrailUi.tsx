@@ -154,6 +154,7 @@ export function PhaseComplete({
   const { isDark } = useAppearance();
   const shownXp = useCountUp(xp, 300);
   const border = isDark ? colors.gray[700] : colors.gray[200];
+  const xpColor = isDark ? colors.family.brand : colors.family.brandEdge;
 
   return (
     <View style={styles.completeWrap}>
@@ -169,7 +170,7 @@ export function PhaseComplete({
       <View style={[styles.stats, { borderColor: border }]}>
         <Stat icon={<FileCheck size={20} color={isDark ? '#4ade80' : colors.green[600]} />} value={String(count)} label={countLabel} color={isDark ? '#4ade80' : colors.green[600]} />
         <View style={[styles.statDivider, { backgroundColor: border }]} />
-        <Stat icon={<Zap size={20} color={colors.purple[500]} />} value={String(shownXp)} label="XP recebido" color={colors.purple[500]} />
+        <Stat icon={<Zap size={20} color={xpColor} fill={xpColor} />} value={String(shownXp)} label="XP recebido" color={xpColor} />
         <View style={[styles.statDivider, { backgroundColor: border }]} />
         <Stat icon={<Target size={20} color={colors.blue[500]} />} value={`${accuracy}%`} label="Precisão" color={colors.blue[500]} />
       </View>

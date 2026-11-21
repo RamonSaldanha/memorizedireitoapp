@@ -41,7 +41,7 @@ export function PublicProfileScreen() {
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.purple[500]} size="large" />
+          <ActivityIndicator color={colors.family.brandEdge} size="large" />
         </View>
       ) : isError || !data ? (
         <View style={styles.center}>

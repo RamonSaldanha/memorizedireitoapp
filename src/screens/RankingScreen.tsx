@@ -48,12 +48,12 @@ const POSITION_STYLES: Record<number, {
     nameIconColor: colors.blue[600],
   },
   3: {
-    badgeBg: colors.purple[500],
-    avatarBg: colors.purple[100],
-    avatarText: colors.purple[700],
-    avatarRing: colors.purple[400],
-    ringBorder: colors.purple[400],
-    nameIconColor: colors.purple[600],
+    badgeBg: colors.orange[700],
+    avatarBg: colors.orange[100],
+    avatarText: colors.orange[900],
+    avatarRing: colors.orange[600],
+    ringBorder: colors.orange[600],
+    nameIconColor: colors.orange[700],
   },
 };
 
@@ -144,7 +144,7 @@ export function RankingScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={colors.purple[500]} />
+        <ActivityIndicator style={styles.loader} color={colors.family.brandEdge} />
       ) : isEmpty ? (
         /* Empty state — matching web */
         <View style={styles.emptyState}>

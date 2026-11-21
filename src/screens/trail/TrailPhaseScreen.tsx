@@ -250,7 +250,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
   if (isLoading || (!data && !error)) {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]}>
-        <ActivityIndicator color={colors.purple[500]} size="large" />
+        <ActivityIndicator color={colors.family.brandEdge} size="large" />
       </SafeAreaView>
     );
   }
