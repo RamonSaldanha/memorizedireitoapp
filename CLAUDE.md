@@ -10,6 +10,9 @@ This is an Expo-managed React Native app. There is no test runner, linter, or fo
 - `npm run android` / `npm run ios` / `npm run web` — start with a specific platform target
 - TypeScript check: `npx tsc --noEmit` (strict mode is on, extending `expo/tsconfig.base`)
 
+### Over-the-air updates (EAS Update)
+`expo-updates` is installed (since 21/11/2026). Builds listen on the channel of their `eas.json` profile (`preview` = the test APK, `production` = the store). JS/asset changes ship with `npx eas-cli update --channel preview --message "..."` (or `production`); the app downloads on launch and applies on the next launch. `runtimeVersion` follows `version` in `app.json` (`appVersion` policy): an update only reaches builds with the same `version`, so bump `version` and make a new build whenever native code changes (new native module, permission, Expo SDK, icon). Free plan: 1,000 monthly users who download an update.
+
 The app's New Architecture is enabled (`app.json` → `newArchEnabled: true`), so any added native module must be Fabric/TurboModules-compatible.
 
 ## Architecture
