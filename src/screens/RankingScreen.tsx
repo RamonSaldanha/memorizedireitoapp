@@ -13,6 +13,7 @@ import { hasAvatar } from '../lib/avatar';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
 import type { ThemeTokens } from '../stores/appearanceStore';
+import { AppHeader } from '../components/layout/AppHeader';
 
 type Period = 'daily' | 'weekly' | 'all';
 
@@ -91,7 +92,8 @@ export function RankingScreen() {
     !topUsers.some((u) => u.is_current_user);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+      <AppHeader />
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}

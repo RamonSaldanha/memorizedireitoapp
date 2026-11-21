@@ -94,20 +94,25 @@ export function PublicProfileScreen() {
                   key={achievement.uuid}
                   style={[styles.card, { backgroundColor: theme.card, borderColor: isDark ? colors.gray[800] : colors.gray[200] }]}
                 >
-                  <StarBadge
-                    badgeUrl={achievement.badge_url}
-                    name={achievement.name}
-                    stars={achievement.stars}
-                    icon={achievement.icon}
-                    color={achievement.color}
-                    size={112}
-                  />
+                  <View style={{ marginBottom: achievement.badge_url ? -Math.round(112 * 0.15) : 0 }}>
+                    <StarBadge
+                      badgeUrl={achievement.badge_url}
+                      name={achievement.name}
+                      stars={achievement.stars}
+                      icon={achievement.icon}
+                      color={achievement.color}
+                      size={112}
+                    />
+                  </View>
                   <Text style={[styles.cardName, { color: strong }]} numberOfLines={2}>
                     {achievement.name}
                   </Text>
-                  <View style={{ marginTop: 6 }}>
-                    <StarRow stars={achievement.stars} />
-                  </View>
+                  {/* A arte nova já mostra as estrelas; a fileira só aparece no badge antigo */}
+                  {!achievement.badge_url ? (
+                    <View style={{ marginTop: 6 }}>
+                      <StarRow stars={achievement.stars} />
+                    </View>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -135,7 +140,7 @@ const styles = StyleSheet.create({
   bio: { marginTop: 8, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 360 },
   sectionLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 12, paddingHorizontal: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { width: '47.5%', alignItems: 'center', borderWidth: 1, borderRadius: 16, padding: 16 },
-  cardName: { marginTop: 12, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  card: { width: '47.5%', alignItems: 'center', borderWidth: 2, borderRadius: 24, padding: 16 },
+  cardName: { marginTop: 8, fontSize: 16, fontWeight: '800', textAlign: 'center' },
   empty: { borderWidth: 1, borderStyle: 'dashed', borderRadius: 16, padding: 32 },
 });

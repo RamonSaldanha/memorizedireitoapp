@@ -11,7 +11,7 @@ import { useAppearance } from '../../hooks/useAppearance';
 import { Avatar } from '../ui/Avatar';
 import type { PlayStackParamList, TabParamList } from '../../navigation/AppTabs';
 
-// O header vive nas telas do jogo, mas o avatar leva para outra aba (Perfil).
+// O topo aparece em todas as abas, como o cabeçalho da web: a ofensiva abre na pilha do Jogar e o avatar leva ao Perfil.
 type Nav = CompositeNavigationProp<NativeStackNavigationProp<PlayStackParamList>, BottomTabNavigationProp<TabParamList>>;
 
 export function AppHeader() {
@@ -54,7 +54,7 @@ export function AppHeader() {
       {/* Ofensiva (streak) */}
       <Pressable
         style={[styles.pill, { backgroundColor: isDark ? colors.gray[900] : colors.orange[50] }]}
-        onPress={() => navigation.navigate('Ofensiva')}
+        onPress={() => navigation.navigate('Jogar', { screen: 'Ofensiva' })}
       >
         <Flame
           size={20}

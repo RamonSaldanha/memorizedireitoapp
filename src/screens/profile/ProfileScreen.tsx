@@ -30,6 +30,7 @@ import type { ProfileSettings } from '../../api/profile';
 import { usePreferencesStore } from '../../stores/preferencesStore';
 import type { ProfileStackParamList } from '../../navigation/AppTabs';
 import { familyTokens } from '../../theme/colors';
+import { AppHeader } from '../../components/layout/AppHeader';
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -154,7 +155,8 @@ export function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+      <AppHeader />
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
     <ScrollView style={{ backgroundColor: theme.background }}>
       {/* Card do usuário: o avatar no palco, como no perfil da web */}

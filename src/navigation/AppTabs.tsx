@@ -21,6 +21,7 @@ import { LegalReferencesScreen } from '../screens/LegalReferencesScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 import { AvatarEditorScreen } from '../screens/profile/AvatarEditorScreen';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type PlayStackParamList = {
   // O mapa de quadrados (o mesmo do beta da web) e os passos dele: a fase, o desafio do
@@ -110,7 +111,8 @@ function ProfileTabIcon({ focused, color }: { focused: boolean; color: string })
 }
 
 export type TabParamList = {
-  Jogar: undefined;
+  // A ofensiva fica na pilha do Jogar; o topo de qualquer aba chega nela por aqui
+  Jogar: NavigatorScreenParams<PlayStackParamList> | undefined;
   Conquistas: undefined;
   Ranking: undefined;
   Leis: undefined;

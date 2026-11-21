@@ -11,6 +11,7 @@ import { GameButton } from '../components/ui/GameButton';
 import { Toast } from '../components/ui/Toast';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
+import { AppHeader } from '../components/layout/AppHeader';
 
 export function LegalReferencesScreen() {
   const queryClient = useQueryClient();
@@ -57,7 +58,8 @@ export function LegalReferencesScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['left', 'right']}>
+      <AppHeader />
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Text style={[styles.title, { color: theme.foreground }]}>Selecione as legislações{'\n'}que deseja estudar</Text>
 
