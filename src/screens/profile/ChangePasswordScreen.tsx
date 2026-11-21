@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import { profileApi } from '../../api/profile';
 import { useAppearance } from '../../hooks/useAppearance';
 import { colors } from '../../theme/colors';
+import { GameButton } from '../../components/ui/GameButton';
 
 export function ChangePasswordScreen() {
   const navigation = useNavigation();
@@ -137,15 +138,16 @@ export function ChangePasswordScreen() {
           '••••••••'
         )}
 
-        <Pressable
-          style={[styles.button, { backgroundColor: colors.purple[600] }]}
+        <GameButton
+          variant="main"
+          size="lg"
+          fullWidth
           onPress={handleSubmit}
           disabled={passwordMutation.isPending}
+          style={{ marginTop: 8 }}
         >
-          <Text style={styles.buttonText}>
-            {passwordMutation.isPending ? 'Salvando...' : 'Salvar nova senha'}
-          </Text>
-        </Pressable>
+          {passwordMutation.isPending ? 'Salvando...' : 'Salvar nova senha'}
+        </GameButton>
       </View>
     </ScrollView>
   );
@@ -168,11 +170,4 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   input: { flex: 1, fontSize: 15 },
-  button: {
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

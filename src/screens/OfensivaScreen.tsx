@@ -13,6 +13,8 @@ import { Logo } from '../components/Logo';
 import { useUserStore } from '../stores/userStore';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
+import { GameButton } from '../components/ui/GameButton';
+import { familyTokens } from '../theme/colors';
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const dayLabel = (n: number) => (n === 1 ? 'dia' : 'dias');
@@ -28,6 +30,7 @@ function subtitleText(current: number, playedToday: boolean): string {
 export function OfensivaScreen() {
   const navigation = useNavigation();
   const { isDark, theme } = useAppearance();
+  const family = familyTokens(isDark);
   const cardRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
   const [month, setMonth] = useState<string | undefined>(undefined);
@@ -165,33 +168,37 @@ export function OfensivaScreen() {
           </View>
 
           {/* Botão compartilhar */}
-          <Pressable onPress={handleShare} disabled={sharing} style={[styles.shareBtn, sharing && { opacity: 0.6 }]}>
+          <GameButton variant="tonal-brand" size="md" onPress={handleShare} disabled={sharing} style={{ alignSelf: 'center', marginTop: 20 }}>
             {sharing ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={family.brandSoftInk} />
             ) : (
               <>
-                <Share2 size={20} color="#ffffff" />
-                <Text style={styles.shareText}>Compartilhar</Text>
+                <Share2 size={20} color={family.brandSoftInk} />
+                <Text style={{ color: family.brandSoftInk, fontSize: 16, fontWeight: '700' }}>Compartilhar</Text>
               </>
             )}
-          </Pressable>
+          </GameButton>
 
           {/* Calendário mensal (heatmap) */}
           {data && (
             <View style={[styles.monthCard, { backgroundColor: theme.card, borderColor: isDark ? colors.gray[700] : colors.gray[100] }]}>
               <View style={styles.monthHeader}>
-                <Pressable onPress={() => setMonth(data.month.prev)} hitSlop={8} style={styles.iconBtn}>
+                <GameButton variant="ghost" size="xs" square hitSlop={8} accessibilityLabel="Mês anterior" onPress={() => setMonth(data.month.prev)}>
                   <ChevronLeft size={20} color={theme.mutedForeground} />
-                </Pressable>
+                </GameButton>
                 <Text style={[styles.monthLabel, { color: theme.foreground }]}>{data.month.label}</Text>
-                <Pressable
+                <GameButton
+                  variant="ghost"
+                  size="xs"
+                  square
+                  hitSlop={8}
+                  accessibilityLabel="Próximo mês"
                   onPress={() => data.month.next && setMonth(data.month.next)}
                   disabled={!data.month.next}
-                  hitSlop={8}
-                  style={[styles.iconBtn, !data.month.next && { opacity: 0.3 }]}
+                  containerStyle={!data.month.next && { opacity: 0.3 }}
                 >
                   <ChevronRight size={20} color={theme.mutedForeground} />
-                </Pressable>
+                </GameButton>
               </View>
 
               <View style={styles.weekHeaderRow}>
@@ -324,12 +331,6 @@ const styles = StyleSheet.create({
   statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statValue: { fontSize: 17, fontWeight: '800' },
 
-  shareBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    alignSelf: 'center', backgroundColor: colors.orange[500],
-    paddingHorizontal: 28, paddingVertical: 14, borderRadius: 999, minWidth: 200,
-  },
-  shareText: { color: '#ffffff', fontSize: 16, fontWeight: '800' },
 
   monthCard: { borderRadius: 24, borderWidth: 1, padding: 16 },
   monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },

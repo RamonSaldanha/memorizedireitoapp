@@ -4,7 +4,7 @@ import { SvgXml } from 'react-native-svg';
 import { Lock } from 'lucide-react-native';
 import { buildAvatarSvg, type AvatarConfig, type AvatarCrop } from '../../lib/avatar';
 import { useAppearance } from '../../hooks/useAppearance';
-import { colors } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
 
 type Props = {
   // Config completo já com a opção desta peça aplicada (`previewWith` da lib).
@@ -41,7 +41,7 @@ export function OptionTile({ preview, label, selected, crop, uid, width, locked 
         styles.tile,
         { width },
         selected
-          ? { borderColor: isDark ? colors.purple[400] : colors.purple[500], backgroundColor: isDark ? 'rgba(168,85,247,0.15)' : colors.purple[50] }
+          ? { borderColor: familyTokens(isDark).choice, backgroundColor: familyTokens(isDark).choiceSoft }
           : { borderColor: isDark ? colors.gray[700] : colors.gray[200] },
       ]}
     >
@@ -62,7 +62,7 @@ export function OptionTile({ preview, label, selected, crop, uid, width, locked 
       <Text
         style={[
           styles.label,
-          { color: selected ? (isDark ? colors.purple[300] : colors.purple[600]) : isDark ? colors.gray[400] : colors.gray[500] },
+          { color: selected ? familyTokens(isDark).choiceInk : isDark ? colors.gray[400] : colors.gray[500] },
         ]}
       >
         {label}

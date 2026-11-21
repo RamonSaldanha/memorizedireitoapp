@@ -29,6 +29,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProfileSettings } from '../../api/profile';
 import { usePreferencesStore } from '../../stores/preferencesStore';
 import type { ProfileStackParamList } from '../../navigation/AppTabs';
+import { familyTokens } from '../../theme/colors';
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -37,6 +38,7 @@ export function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
   const { name, avatarConfig, hasInfiniteLives } = useUserStore();
   const { appearance, setAppearance, isDark, theme } = useAppearance();
+  const family = familyTokens(isDark);
   const { successSoundEnabled, setSuccessSoundEnabled } = usePreferencesStore();
   const queryClient = useQueryClient();
 
@@ -158,15 +160,10 @@ export function ProfileScreen() {
       {/* Card do usuário: o avatar no palco, como no perfil da web */}
       <View style={[styles.userCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <AvatarStage config={avatarConfig} name={name ?? ''} style={styles.avatarStage}>
-          <Pressable
-            style={[styles.editAvatarButton, { backgroundColor: isDark ? colors.gray[800] : '#ffffff', borderColor: isDark ? colors.gray[700] : colors.gray[200] }]}
-            onPress={() => navigation.navigate('AvatarEditor')}
-            accessibilityRole="button"
-            accessibilityLabel="Editar avatar"
-          >
-            <Pencil size={14} color={isDark ? colors.gray[300] : colors.gray[600]} />
-            <Text style={[styles.editAvatarText, { color: isDark ? colors.gray[300] : colors.gray[600] }]}>Editar</Text>
-          </Pressable>
+          <GameButton variant="second" size="xs" pill accessibilityLabel="Editar avatar" onPress={() => navigation.navigate('AvatarEditor')}>
+            <Pencil size={14} color={family.ink2} />
+            <Text style={[styles.editAvatarText, { color: family.ink2 }]}>Editar</Text>
+          </GameButton>
         </AvatarStage>
         <Text style={[styles.userName, { color: theme.foreground }]}>{name ?? 'Usuário'}</Text>
         <Text style={[styles.userEmail, { color: colors.gray[500] }]}>{user?.email}</Text>
@@ -274,18 +271,15 @@ export function ProfileScreen() {
           <View style={styles.appearanceRow}>
             {appearanceOptions.map((opt) => {
               const isActive = appearance === opt.key;
-              const iconColor = isActive ? colors.purple[600] : theme.foreground;
+              const iconColor = isActive ? family.choiceInk : theme.foreground;
               const IconComponent = opt.icon;
               return (
                 <Pressable
                   key={opt.key}
                   style={[
                     styles.appearanceButton,
-                    isActive && {
-                      backgroundColor: colors.purple[100],
-                      borderColor: colors.purple[500],
-                    },
                     { borderColor: theme.border },
+                    isActive && { backgroundColor: family.choiceSoft, borderColor: family.choice },
                   ]}
                   onPress={() => setAppearance(opt.key)}
                 >
@@ -293,7 +287,7 @@ export function ProfileScreen() {
                   <Text
                     style={[
                       styles.appearanceLabel,
-                      { color: isActive ? colors.purple[600] : theme.foreground },
+                      { color: isActive ? family.choiceInk : theme.foreground },
                       isActive && { fontWeight: '700' },
                     ]}
                   >
@@ -321,8 +315,8 @@ export function ProfileScreen() {
             <Switch
               value={successSoundEnabled}
               onValueChange={setSuccessSoundEnabled}
-              trackColor={{ false: colors.gray[300], true: colors.purple[300] }}
-              thumbColor={successSoundEnabled ? colors.purple[600] : colors.gray[400]}
+              trackColor={{ false: colors.gray[300], true: family.choice }}
+              thumbColor={successSoundEnabled ? family.choiceInk : colors.gray[400]}
             />
           </View>
           {settings ? (
@@ -350,15 +344,9 @@ export function ProfileScreen() {
 
       {/* Sair */}
       <View style={[styles.section, { marginBottom: 40 }]}>
-        <GameButton
-          variant="red"
-          size="md"
-          fullWidth
-          isDark={isDark}
-          onPress={() => setIsLogoutModalVisible(true)}
-        >
-          <LogOut size={18} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Sair</Text>
+        <GameButton variant="tonal-danger" size="md" fullWidth onPress={() => setIsLogoutModalVisible(true)}>
+          <LogOut size={18} color={family.dangerSoftInk} />
+          <Text style={{ color: family.dangerSoftInk, fontWeight: '700', fontSize: 16 }}>Sair</Text>
         </GameButton>
 
         <Pressable
@@ -412,15 +400,12 @@ export function ProfileScreen() {
             <Text style={[styles.counter, { color: colors.gray[400] }]}>{editValue.length}/160</Text>
           ) : null}
           <View style={styles.modalActions}>
-            <Pressable style={styles.modalButtonSecondary} onPress={() => setEditField(null)}>
-              <Text style={{ color: colors.gray[500] }}>Cancelar</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modalButtonPrimary, { backgroundColor: colors.purple[600] }]}
-              onPress={handleSaveEdit}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Salvar</Text>
-            </Pressable>
+            <GameButton variant="ghost" size="sm" onPress={() => setEditField(null)}>
+              Cancelar
+            </GameButton>
+            <GameButton variant="main" size="sm" onPress={handleSaveEdit}>
+              Salvar
+            </GameButton>
           </View>
         </View>
       </Modal>
@@ -450,16 +435,12 @@ export function ProfileScreen() {
           />
           {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
           <View style={styles.modalActions}>
-            <Pressable style={styles.modalButtonSecondary} onPress={() => setIsDeleteModalVisible(false)}>
-              <Text style={{ color: colors.gray[500] }}>Cancelar</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modalButtonPrimary, { backgroundColor: colors.red[600], opacity: deletePassword && !deleting ? 1 : 0.5 }]}
-              onPress={handleDeleteAccount}
-              disabled={!deletePassword || deleting}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>{deleting ? 'Excluindo...' : 'Excluir de vez'}</Text>
-            </Pressable>
+            <GameButton variant="ghost" size="sm" onPress={() => setIsDeleteModalVisible(false)}>
+              Cancelar
+            </GameButton>
+            <GameButton variant="danger" size="sm" onPress={handleDeleteAccount} disabled={!deletePassword || deleting}>
+              {deleting ? 'Excluindo...' : 'Excluir de vez'}
+            </GameButton>
           </View>
         </View>
       </Modal>
@@ -476,18 +457,12 @@ export function ProfileScreen() {
             Tem certeza que deseja sair?
           </Text>
           <View style={styles.modalActions}>
-            <Pressable
-              style={styles.modalButtonSecondary}
-              onPress={() => setIsLogoutModalVisible(false)}
-            >
-              <Text style={{ color: colors.gray[500] }}>Cancelar</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modalButtonPrimary, { backgroundColor: colors.red[600] }]}
-              onPress={handleLogout}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Sair</Text>
-            </Pressable>
+            <GameButton variant="ghost" size="sm" onPress={() => setIsLogoutModalVisible(false)}>
+              Cancelar
+            </GameButton>
+            <GameButton variant="danger" size="sm" onPress={handleLogout}>
+              Sair
+            </GameButton>
           </View>
         </View>
       </Modal>
@@ -524,15 +499,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   avatarStage: { alignSelf: 'stretch', marginBottom: 14 },
-  editAvatarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 2,
-  },
   editAvatarText: { fontSize: 12, fontWeight: '700' },
   userName: { fontSize: 20, fontWeight: '700' },
   userEmail: { fontSize: 14, marginTop: 4 },
@@ -588,12 +554,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
-  modalButtonSecondary: { paddingHorizontal: 16, paddingVertical: 10 },
-  modalButtonPrimary: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
   syncOverlay: {
     position: 'absolute',
     top: 0,

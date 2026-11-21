@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GameButton } from '../ui/GameButton';
 import { Pressable, StyleSheet, Text, View, type TextLayoutEventData, type NativeSyntheticEvent } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Minus, Pause, Play, Plus, Rows3, WholeWord } from 'lucide-react-native';
@@ -467,29 +468,38 @@ export function ReadingPanel({ reading }: { reading: GuidedReading }) {
 
   return (
     <View style={[styles.panel, { backgroundColor: bg, borderColor: edge }]}>
-      <Pressable
+      <GameButton
+        variant="main"
+        size="sm"
+        square
         onPress={reading.toggle}
-        style={[styles.playButton, { backgroundColor: colors.purple[500] }]}
+        containerStyle={{ marginBottom: 4 }}
         accessibilityLabel={reading.state === 'playing' ? 'Pausar a leitura' : 'Iniciar a leitura'}
       >
-        {reading.state === 'playing' ? <Pause size={22} color="#fff" fill="#fff" /> : <Play size={22} color="#fff" fill="#fff" />}
-      </Pressable>
-      <Pressable onPress={() => reading.setWpm(reading.wpm + WPM_STEP)} style={styles.panelButton} accessibilityLabel="Mais rápido">
+        {reading.state === 'playing' ? (
+          <Pause size={20} color={colors.family.brandInk} fill={colors.family.brandInk} />
+        ) : (
+          <Play size={20} color={colors.family.brandInk} fill={colors.family.brandInk} />
+        )}
+      </GameButton>
+      <GameButton variant="ghost" size="sm" square onPress={() => reading.setWpm(reading.wpm + WPM_STEP)} accessibilityLabel="Mais rápido">
         <Plus size={20} color={fg} />
-      </Pressable>
+      </GameButton>
       <Text style={[styles.wpm, { color: fg }]}>{reading.wpm}</Text>
       <Text style={[styles.wpmLabel, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>pal/min</Text>
-      <Pressable onPress={() => reading.setWpm(reading.wpm - WPM_STEP)} style={styles.panelButton} accessibilityLabel="Mais devagar">
+      <GameButton variant="ghost" size="sm" square onPress={() => reading.setWpm(reading.wpm - WPM_STEP)} accessibilityLabel="Mais devagar">
         <Minus size={20} color={fg} />
-      </Pressable>
+      </GameButton>
       <View style={[styles.panelDivider, { backgroundColor: edge }]} />
-      <Pressable
+      <GameButton
+        variant="ghost"
+        size="sm"
+        square
         onPress={() => reading.setMode(reading.mode === 'chunk' ? 'line' : 'chunk')}
-        style={styles.panelButton}
         accessibilityLabel={reading.mode === 'chunk' ? 'Trocar para régua de leitura' : 'Trocar para leitura por blocos'}
       >
         {reading.mode === 'chunk' ? <WholeWord size={20} color={fg} /> : <Rows3 size={20} color={fg} />}
-      </Pressable>
+      </GameButton>
     </View>
   );
 }
@@ -524,14 +534,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 6,
     gap: 4,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
   },
-  playButton: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  panelButton: { width: 40, height: 36, alignItems: 'center', justifyContent: 'center' },
   wpm: { fontSize: 15, fontWeight: '800' },
   wpmLabel: { fontSize: 10, fontWeight: '600' },
   panelDivider: { height: 2, width: 28, borderRadius: 1, marginVertical: 2 },

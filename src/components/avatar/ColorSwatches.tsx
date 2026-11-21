@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useAppearance } from '../../hooks/useAppearance';
-import { colors } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
 
 type Props = {
   colors: string[];
@@ -29,7 +29,7 @@ export function ColorSwatches({ colors: palette, value, label, onChange }: Props
             style={[
               styles.swatch,
               selected
-                ? { borderColor: isDark ? colors.purple[400] : colors.purple[500], backgroundColor: isDark ? 'rgba(168,85,247,0.15)' : colors.purple[50] }
+                ? { borderColor: familyTokens(isDark).choice, backgroundColor: familyTokens(isDark).choiceSoft }
                 : { borderColor: isDark ? colors.gray[700] : colors.gray[200] },
             ]}
           >

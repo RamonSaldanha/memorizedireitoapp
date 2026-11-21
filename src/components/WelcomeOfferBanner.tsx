@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Gift, X } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAppearance } from '../hooks/useAppearance';
@@ -7,7 +7,7 @@ import { useCountdown } from '../hooks/useCountdown';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { useSubscriptionCheckout } from '../hooks/useSubscriptionCheckout';
 import { useAuthStore } from '../stores/authStore';
-import { ChunkyPressable, ChunkyView } from './onboarding/ChunkyPressable';
+import { GameButton } from './ui/GameButton';
 import { OVERSHOOT } from './onboarding/motion';
 import { tw } from './onboarding/palette';
 
@@ -81,20 +81,16 @@ export function WelcomeOfferBanner() {
         },
       ]}
     >
-      <ChunkyView
-        radius={16}
-        shadowColor={isDark ? tw.shadowDark : tw.pink200}
+      <View
         style={[
           styles.card,
-          isDark
-            ? { borderColor: tw.pink900, backgroundColor: colors.gray[800] }
-            : { borderColor: tw.pink200, backgroundColor: '#fff' },
+          isDark ? { borderColor: tw.pink900, backgroundColor: '#500724' } : { borderColor: tw.pink200, backgroundColor: tw.pink100 },
         ]}
       >
         <Animated.View
           style={[
             styles.gift,
-            { backgroundColor: isDark ? tw.pink950_60 : tw.pink100 },
+            { backgroundColor: tw.pink500 },
             {
               transform: [
                 {
@@ -107,38 +103,24 @@ export function WelcomeOfferBanner() {
             },
           ]}
         >
-          <Gift size={20} color={isDark ? tw.pink300 : tw.pink500} />
+          <Gift size={20} color="#fff" />
         </Animated.View>
         <View style={styles.texts}>
-          <Text style={[styles.title, { color: isDark ? '#fff' : colors.gray[900] }]}>
+          <Text style={[styles.title, { color: isDark ? tw.pink300 : '#be185d' }]}>
             {offer?.percent_off}% off no plano anual
           </Text>
-          <Text style={[styles.sub, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>
+          <Text style={[styles.sub, { color: isDark ? '#fbcfe8' : '#9d174d' }]}>
             Termina em{' '}
-            <Text style={[styles.countdown, { color: isDark ? tw.pink300 : tw.pink600 }]}>{countdown}</Text>
+            <Text style={styles.countdown}>{countdown}</Text>
           </Text>
         </View>
-        <ChunkyPressable
-          onPress={openSubscription}
-          radius={12}
-          depth={3}
-          shadowColor={tw.green700}
-          style={styles.cta}
-        >
-          <Text style={styles.ctaText}>GARANTIR</Text>
-        </ChunkyPressable>
-        <Pressable
-          onPress={dismiss}
-          accessibilityLabel="Fechar lembrete da oferta"
-          hitSlop={6}
-          style={({ pressed }) => [
-            styles.close,
-            pressed && { backgroundColor: isDark ? colors.gray[700] : colors.gray[100] },
-          ]}
-        >
-          <X size={16} color={colors.gray[400]} />
-        </Pressable>
-      </ChunkyView>
+        <GameButton variant="main" size="sm" onPress={openSubscription}>
+          Garantir
+        </GameButton>
+        <GameButton variant="ghost" size="xs" square onPress={dismiss} hitSlop={6} accessibilityLabel="Fechar lembrete da oferta">
+          <X size={16} color={isDark ? tw.pink300 : '#be185d'} />
+        </GameButton>
+      </View>
     </Animated.View>
   );
 }
@@ -154,6 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 2,
+    borderRadius: 16,
     paddingVertical: 10,
     paddingLeft: 12,
     paddingRight: 8,
@@ -161,7 +144,7 @@ const styles = StyleSheet.create({
   gift: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -181,26 +164,5 @@ const styles = StyleSheet.create({
   countdown: {
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
-  },
-  cta: {
-    borderWidth: 2,
-    borderColor: tw.green600,
-    backgroundColor: tw.green500,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  ctaText: {
-    color: '#fff',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  close: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
