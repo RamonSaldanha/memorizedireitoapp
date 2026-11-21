@@ -112,7 +112,7 @@ export function ResultBar({
         <Text style={[styles.resultTitle, { color: tone.title }]}>{title ?? (correct ? 'Você acertou!' : 'Não foi dessa vez')}</Text>
       </View>
       {children ? <View style={styles.resultBody}>{wrapText(children, tone.body)}</View> : null}
-      <GameButton variant={correct ? 'green' : 'red'} size="lg" fullWidth onPress={onContinue} style={{ marginTop: 16 }}>
+      <GameButton variant={correct ? 'success' : 'danger'} size="lg" fullWidth onPress={onContinue} style={{ marginTop: 16 }}>
         {buttonLabel}
       </GameButton>
     </Animated.View>

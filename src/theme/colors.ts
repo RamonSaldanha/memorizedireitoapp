@@ -1,17 +1,18 @@
 export const colors = {
-  // Grays (neutral, sem tom azulado — idêntico ao tailwind.config.js do web)
+  // Cinzas quentes do tom papel (20/11/2026), os mesmos do tailwind.config.js do web: o 50 é o
+  // fundo de papel, o 100 o fundo suave, o 200 o contorno, o 800 a tinta e o 900 o fundo escuro.
   gray: {
-    50: '#fafafa',
-    100: '#f5f5f5',
-    200: '#e5e5e5',
-    300: '#d4d4d4',
-    400: '#a3a3a3',
-    500: '#737373',
-    600: '#525252',
-    700: '#404040',
-    800: '#262626',
-    900: '#171717',
-    950: '#0a0a0a',
+    50: '#f8f6f1',
+    100: '#efebe3',
+    200: '#e4ded2',
+    300: '#d3ccbe',
+    400: '#a8a297',
+    500: '#78726a',
+    600: '#5a554d',
+    700: '#47433c',
+    800: '#2b2925',
+    900: '#1b1a17',
+    950: '#12110f',
   },
 
   // Game accent colors
@@ -24,24 +25,99 @@ export const colors = {
   amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 900: '#78350f' },
   orange: { 50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 900: '#7c2d12' },
 
-  // Semantic (light mode)
-  background: '#ffffff',
-  foreground: '#0a0a0a',
-  card: '#ffffff',
-  border: '#e5e5e5',
-  muted: '#f5f5f5',
-  mutedForeground: '#737373',
-  primary: '#171717',
-  primaryForeground: '#fafafa',
+  // Semânticas do tom papel (as variáveis do shadcn em resources/css/app.css do web)
+  background: '#f8f6f1',
+  foreground: '#2b2925',
+  card: '#fffdf8',
+  border: '#e4ded2',
+  muted: '#efebe3',
+  mutedForeground: '#78726a',
+  primary: '#efc12f',
+  primaryForeground: '#332800',
 
-  // Dark mode equivalents
   dark: {
-    background: '#0a0a0a',
-    foreground: '#fafafa',
-    card: '#171717',
-    border: '#262626',
-    muted: '#171717',
-    mutedForeground: '#a3a3a3',
+    background: '#1b1a17',
+    foreground: '#eeebe4',
+    card: '#24221f',
+    border: '#3d3a34',
+    muted: '#2d2b27',
+    mutedForeground: '#a6a096',
+  },
+
+  // Família de botões, escolhas e avisos: as --mz-* de resources/css/app.css do web.
+  // Ver docs/design/componentes.html no projeto web.
+  family: {
+    light: {
+      face: '#fffdf8',
+      ink: '#2b2925',
+      ink2: '#47433c',
+      muted: '#78726a',
+      line: '#e4ded2',
+      edge: '#e4ded2',
+      tint: '#efebe3',
+      tint2: '#e6e1d6',
+      off: '#ebe7df',
+      offInk: '#a8a297',
+      offEdge: '#dcd6ca',
+      brandSoft: '#f6ecc8',
+      brandSoft2: '#f0dfa6',
+      brandSoftInk: '#5e4800',
+      brandMark: '#f3d873',
+      dangerSoft: '#f5e2df',
+      dangerSoft2: '#edd0cb',
+      dangerSoftInk: '#993a32',
+      choice: '#87a5d8',
+      choiceSoft: '#edf1f8',
+      choiceInk: '#3c5f9e',
+      ok: '#86c39c',
+      okSoft: '#edf5ef',
+      okInk: '#2e7348',
+      bad: '#e1928a',
+      badSoft: '#f9edeb',
+      badInk: '#a8423a',
+      press: 'rgba(0,0,0,0.08)',
+    },
+    dark: {
+      face: '#282622',
+      ink: '#eeebe4',
+      ink2: '#d3cfc6',
+      muted: '#a6a096',
+      line: '#3d3a34',
+      edge: '#100f0d',
+      tint: '#2d2b27',
+      tint2: '#37342f',
+      off: '#312f2a',
+      offInk: '#77726a',
+      offEdge: '#1d1c19',
+      brandSoft: '#3a3214',
+      brandSoft2: '#4a4019',
+      brandSoftInk: '#f1dc95',
+      brandMark: '#7c6522',
+      dangerSoft: '#3a1c19',
+      dangerSoft2: '#4a2420',
+      dangerSoftInk: '#efb0a8',
+      choice: '#6f8fc7',
+      choiceSoft: '#1c2537',
+      choiceInk: '#b3c7ea',
+      ok: '#3f7d55',
+      okSoft: '#16261c',
+      okInk: '#a6d9b7',
+      bad: '#8f4a44',
+      badSoft: '#2e1a18',
+      badInk: '#efb0a8',
+      press: 'rgba(0,0,0,0.35)',
+    },
+    // Iguais nos dois temas
+    brand: '#efc12f',
+    brandEdge: '#b38c17',
+    brandHover: '#f5cc4a',
+    brandInk: '#332800',
+    danger: '#c0473e',
+    dangerEdge: '#8e322b',
+    success: '#2b8a52',
+    successEdge: '#1d5f38',
+    premium: '#8b5cc7',
+    premiumEdge: '#643f96',
   },
 
   // Game-specific
@@ -66,3 +142,10 @@ export const colors = {
 } as const;
 
 export type Colors = typeof colors;
+
+export type FamilyTokens = { [K in keyof (typeof colors.family)['light']]: string };
+
+/** Tokens da família no tema atual. */
+export function familyTokens(isDark: boolean): FamilyTokens {
+  return isDark ? colors.family.dark : colors.family.light;
+}

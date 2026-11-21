@@ -299,7 +299,7 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
           </View>
 
           {startError ? <Text style={styles.error}>Não foi possível começar agora. Tente de novo.</Text> : null}
-          <GameButton variant="purple" size="lg" fullWidth disabled={starting} onPress={start}>
+          <GameButton variant="premium" size="lg" fullWidth disabled={starting} onPress={start}>
             Começar a prova
           </GameButton>
           <GameButton variant="white" size="lg" fullWidth isDark={isDark} onPress={onExit} style={{ marginTop: 12 }}>
@@ -413,7 +413,7 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
       {!feedback ? (
         <View style={[styles.footer, { borderTopColor: isDark ? colors.gray[800] : colors.gray[100], paddingBottom: Math.max(insets.bottom, 8) + 12 }]}>
           {checkError ? <Text style={styles.error}>Não foi possível corrigir agora. Tente de novo.</Text> : null}
-          <GameButton variant="purple" size="lg" fullWidth disabled={!selected || checking} onPress={check}>
+          <GameButton variant="premium" size="lg" fullWidth disabled={!selected || checking} onPress={check}>
             Responder
           </GameButton>
         </View>

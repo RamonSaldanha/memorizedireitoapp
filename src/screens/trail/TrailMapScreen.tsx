@@ -455,7 +455,7 @@ export function TrailMapScreen() {
                       </GameButton>
                     ) : (
                       <GameButton
-                        variant={ex.exam.state === 'complete' && !ex.exam.in_progress ? 'green' : 'purple'}
+                        variant={ex.exam.state === 'complete' && !ex.exam.in_progress ? 'second' : 'premium'}
                         size="lg"
                         fullWidth
                         style={{ marginTop: 16 }}
