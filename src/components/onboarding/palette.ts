@@ -97,14 +97,14 @@ export function opaqueTint(name: string, isDark: boolean) {
   return isDark ? { ...t, bg: OPAQUE_DARK_BG[(name as Tint) in OPAQUE_DARK_BG ? (name as Tint) : 'blue'] } : t;
 }
 
-/** Fundo, texto e bordas da página, como `bg-white dark:bg-gray-900` etc. */
+/** Fundo, texto e bordas da página, no tom papel (`bg-background`, cartões `bg-card`). */
 export function obTheme(isDark: boolean) {
   return {
-    page: isDark ? colors.gray[900] : '#ffffff',
+    page: isDark ? colors.dark.background : colors.background,
     text: isDark ? colors.gray[100] : colors.gray[900],
     muted: isDark ? colors.gray[400] : colors.gray[500],
     faint: colors.gray[400],
-    card: isDark ? colors.gray[800] : '#ffffff',
+    card: isDark ? colors.family.dark.face : colors.family.light.face,
     border: isDark ? colors.gray[700] : colors.gray[200],
     hairline: isDark ? colors.gray[800] : colors.gray[100],
     track: isDark ? colors.gray[800] : colors.gray[100],

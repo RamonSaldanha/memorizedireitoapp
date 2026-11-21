@@ -8,6 +8,7 @@ const WINNER = require('../../../assets/img/vencedora.gif');
 // 418 × 627 px
 const WINNER_RATIO = 418 / 627;
 import { GameButton } from '../ui/GameButton';
+import { ChoiceCard, ChoiceKey, type ChoiceState } from '../ui/ChoiceCard';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useGameSounds } from '../../hooks/useGameSounds';
@@ -42,9 +43,9 @@ export function TrailTopBar({
   return (
     <View style={styles.topBar}>
       <View style={styles.topRow}>
-        <Pressable onPress={onExit} hitSlop={12} accessibilityLabel="Sair" style={styles.exit}>
-          <X size={26} color={isDark ? colors.gray[400] : colors.gray[400]} />
-        </Pressable>
+        <GameButton variant="ghost" size="sm" square onPress={onExit} hitSlop={8} accessibilityLabel="Sair" containerStyle={styles.exit}>
+          <X size={24} color={isDark ? colors.gray[400] : colors.gray[500]} />
+        </GameButton>
         <View style={[styles.track, { backgroundColor: isDark ? colors.gray[700] : colors.gray[200] }]}>
           <Animated.View
             style={[
@@ -325,29 +326,26 @@ function Choice({
     }),
   ).current;
 
-  const palette = {
-    open: selected
-      ? { border: colors.purple[500], bg: isDark ? 'rgba(88,28,135,0.35)' : colors.purple[50] }
-      : { border: isDark ? colors.gray[700] : colors.gray[200], bg: 'transparent' },
-    right: { border: colors.green[500], bg: isDark ? 'rgba(20,83,45,0.4)' : colors.green[50] },
-    wrong: { border: colors.red[400], bg: isDark ? 'rgba(127,29,29,0.4)' : colors.red[50] },
-    other: { border: isDark ? colors.gray[700] : colors.gray[200], bg: 'transparent' },
-  }[state];
-
+  const cardState: ChoiceState =
+    state === 'open' ? (selected ? 'selected' : 'open') : state === 'other' ? 'dim' : state;
   const textColor = isDark ? colors.gray[100] : colors.gray[800];
 
   return (
-    <Animated.View style={{ transform: [{ translateX: dx }], opacity: state === 'other' ? 0.7 : 1 }} {...pan.panHandlers}>
-      <Pressable
+    <Animated.View style={{ transform: [{ translateX: dx }] }} {...pan.panHandlers}>
+      <ChoiceCard
+        state={cardState}
         onPress={onPress}
         disabled={disabled}
-        accessibilityRole="button"
         accessibilityState={{ selected, disabled }}
-        style={[styles.choice, { borderColor: palette.border, backgroundColor: palette.bg }]}
+        style={styles.choice}
       >
-        {multiple ? <Text style={[styles.choiceKey, { color: textColor }, struck && styles.struck]}>{choiceKey}</Text> : null}
+        {multiple ? (
+          <View style={struck ? styles.struckKey : undefined}>
+            <ChoiceKey state={cardState}>{choiceKey}</ChoiceKey>
+          </View>
+        ) : null}
         <Text style={[styles.choiceText, { color: textColor }, !multiple && { fontWeight: '700' }, struck && styles.struck]}>{text}</Text>
-      </Pressable>
+      </ChoiceCard>
     </Animated.View>
   );
 }
@@ -394,7 +392,7 @@ export function ConfirmSheet({
 const styles = StyleSheet.create({
   topBar: { paddingHorizontal: 12, paddingTop: 12 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  exit: { padding: 2 },
+  exit: { marginLeft: -8 },
   track: { flex: 1, height: 12, borderRadius: 999, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 999 },
   caption: { marginTop: 8, fontSize: 12, fontWeight: '500' },
@@ -420,8 +418,8 @@ const styles = StyleSheet.create({
   statDivider: { width: 2 },
 
   choices: { gap: 10 },
-  choice: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  choiceKey: { fontSize: 15, fontWeight: '800' },
+  choice: { alignItems: 'flex-start' },
+  struckKey: { opacity: 0.5 },
   choiceText: { flex: 1, fontSize: 15, lineHeight: 21 },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
 

@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Easing, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Text } from 'react-native';
 import { colors } from '../../theme/colors';
-import { ChunkyPressable } from './ChunkyPressable';
-import { tw } from './palette';
+import { GameButton } from '../ui/GameButton';
 
 type Props = {
   children: string;
@@ -16,9 +15,8 @@ type Props = {
 };
 
 /**
- * O botão principal do onboarding (`.ob-cta` da web): verde "chunky", largura
- * toda, borda de 4px e sombra de 4px no mesmo verde escuro. Desabilitado, fica
- * cinza.
+ * O botão principal do onboarding: o principal amarelo grande da família, na largura toda.
+ * A pulsação mexe só na escala do bloco, então o afundar ao apertar continua valendo.
  */
 export function OnboardingCta({ children, onPress, disabled = false, loading = false, pulse = false, isDark, reduce }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -42,45 +40,14 @@ export function OnboardingCta({ children, onPress, disabled = false, loading = f
     };
   }, [pulse, disabled, reduce]);
 
-  const off = isDark
-    ? { border: colors.gray[600], bg: colors.gray[700], text: colors.gray[500], shadow: tw.shadowDark }
-    : { border: colors.gray[300], bg: colors.gray[200], text: colors.gray[400], shadow: colors.gray[300] };
+  const ink = disabled ? (isDark ? colors.family.dark.offInk : colors.family.light.offInk) : colors.family.brandInk;
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <ChunkyPressable
-        onPress={onPress}
-        disabled={disabled}
-        radius={8}
-        shadowColor={disabled ? off.shadow : tw.green700}
-        accessibilityState={{ disabled, busy: loading }}
-        style={[
-          styles.face,
-          disabled
-            ? { backgroundColor: off.bg, borderColor: off.border }
-            : { backgroundColor: tw.green500, borderColor: tw.green700 },
-        ]}
-      >
-        {loading && <ActivityIndicator size="small" color={disabled ? off.text : '#fff'} />}
-        <Text style={[styles.label, { color: disabled ? off.text : '#fff' }]}>{children}</Text>
-      </ChunkyPressable>
+      <GameButton variant="main" size="lg" fullWidth disabled={disabled} onPress={onPress}>
+        {loading && <ActivityIndicator size="small" color={ink} />}
+        <Text style={{ color: ink, fontSize: 18, fontWeight: '700' }}>{children}</Text>
+      </GameButton>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  face: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  label: {
-    fontSize: 18,
-    lineHeight: 28,
-    fontWeight: '700',
-  },
-});

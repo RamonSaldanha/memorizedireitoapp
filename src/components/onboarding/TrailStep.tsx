@@ -1,10 +1,12 @@
 import React from 'react';
-import { LayoutAnimation, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutAnimation, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
-import { colors } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
+import { choiceLook } from '../ui/ChoiceCard';
 import type { LegislationOption } from '../../lib/onboarding/quiz';
 import { ChunkyPressable } from './ChunkyPressable';
 import { GuideBubble } from './GuideBubble';
+import { GameButton } from '../ui/GameButton';
 import { Drop } from './motion';
 import { tw, type ObTheme } from './palette';
 
@@ -31,6 +33,8 @@ function animateLawChange(reduce: boolean) {
 
 /** 5. A trilha sugerida pelas respostas, que dá para ajustar tocando. */
 export function TrailStep({ trailLaws, otherLaws, showAllLaws, onShowAllLaws, onToggleLaw, isDark, theme, reduce }: Props) {
+  // Leis escolhidas: o azul do cartão de escolha, como na web
+  const chosen = choiceLook('selected', familyTokens(isDark));
   const toggle = (id: number) => {
     animateLawChange(reduce);
     onToggleLaw(id);
@@ -51,22 +55,15 @@ export function TrailStep({ trailLaws, otherLaws, showAllLaws, onShowAllLaws, on
             <ChunkyPressable
               onPress={() => toggle(law.id)}
               radius={16}
-              shadowColor={isDark ? tw.green900 : tw.green300}
+              shadowColor={chosen.line}
               accessibilityLabel={`Tirar ${law.title} da trilha`}
-              style={[
-                styles.law,
-                isDark
-                  ? { borderColor: tw.green800, backgroundColor: tw.green950_40 }
-                  : { borderColor: tw.green300, backgroundColor: tw.green50 },
-              ]}
+              style={[styles.law, { borderColor: chosen.line, backgroundColor: chosen.bg }]}
             >
-              <View style={styles.numberShadow}>
-                <View style={styles.number}>
-                  <Text style={styles.numberText}>{i + 1}</Text>
-                </View>
+              <View style={[styles.number, { backgroundColor: chosen.key }]}>
+                <Text style={[styles.numberText, isDark && { color: colors.gray[900] }]}>{i + 1}</Text>
               </View>
               <Text style={[styles.lawTitle, { color: theme.text }]}>{law.title}</Text>
-              <Check size={20} color={isDark ? tw.green400 : tw.green600} strokeWidth={3} />
+              <Check size={20} color={chosen.key} strokeWidth={3} />
             </ChunkyPressable>
           </Drop>
         ))}
@@ -81,18 +78,17 @@ export function TrailStep({ trailLaws, otherLaws, showAllLaws, onShowAllLaws, on
       {otherLaws.length > 0 && (
         <View style={styles.others}>
           {!showAllLaws && trailLaws.length ? (
-            <Pressable
+            <GameButton
+              variant="dashed"
+              size="md"
+              fullWidth
               onPress={() => {
                 animateLawChange(reduce);
                 onShowAllLaws();
               }}
-              style={({ pressed }) => [
-                styles.more,
-                { borderColor: pressed ? (isDark ? colors.gray[600] : colors.gray[400]) : isDark ? colors.gray[700] : colors.gray[300] },
-              ]}
             >
-              <Text style={[styles.moreText, { color: theme.muted }]}>Incluir outras leis ({otherLaws.length})</Text>
-            </Pressable>
+              {`Incluir outras leis (${otherLaws.length})`}
+            </GameButton>
           ) : (
             <View style={styles.chips}>
               {otherLaws.map((law) => (
@@ -130,17 +126,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  // `shadow-[0_3px_0_#15803d]` do número.
-  numberShadow: {
-    borderRadius: 20,
-    paddingBottom: 3,
-    backgroundColor: tw.green700,
-  },
   number: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: tw.green500,
     alignItems: 'center',
     justifyContent: 'center',
   },

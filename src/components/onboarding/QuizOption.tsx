@@ -1,7 +1,8 @@
 import React from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
-import { colors } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
+import { choiceLook } from '../ui/ChoiceCard';
 import { ChunkyPressable } from './ChunkyPressable';
 import { CheckPop, Rise, usePicked } from './motion';
 import { QUIZ_ICONS } from './icons';
@@ -28,13 +29,9 @@ export function QuizOption({ title, caption, icon, tintName, bars, selected, ind
   const Icon = QUIZ_ICONS[icon] ?? QUIZ_ICONS.Sparkles;
   const iconTint = tint(tintName, isDark);
 
-  const face = selected
-    ? {
-        borderColor: isDark ? tw.blue500 : tw.blue400,
-        backgroundColor: isDark ? tw.blue950_40 : tw.blue50,
-        shadow: isDark ? tw.blue900 : tw.blue300,
-      }
-    : { borderColor: theme.border, backgroundColor: theme.card, shadow: theme.shadow };
+  // Cartão de escolha da família: contorno e base da mesma cor, azul quando escolhido
+  const look = choiceLook(selected ? 'selected' : 'open', familyTokens(isDark));
+  const face = { borderColor: look.line, backgroundColor: look.bg, shadow: look.line };
 
   return (
     <Rise index={index} reduce={reduce}>
@@ -71,8 +68,8 @@ export function QuizOption({ title, caption, icon, tintName, bars, selected, ind
             </View>
           ) : null}
           {selected ? (
-            <CheckPop reduce={reduce} style={styles.check}>
-              <Check size={16} color="#fff" strokeWidth={3} />
+            <CheckPop reduce={reduce} style={[styles.check, { backgroundColor: look.key }]}>
+              <Check size={16} color={isDark ? colors.gray[900] : '#fff'} strokeWidth={3} />
             </CheckPop>
           ) : null}
         </ChunkyPressable>
@@ -124,7 +121,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: tw.blue500,
     alignItems: 'center',
     justifyContent: 'center',
   },
