@@ -108,7 +108,8 @@ export function obTheme(isDark: boolean) {
     border: isDark ? colors.gray[700] : colors.gray[200],
     hairline: isDark ? colors.gray[800] : colors.gray[100],
     track: isDark ? colors.gray[800] : colors.gray[100],
-    shadow: isDark ? tw.shadowDark : colors.gray[200],
+    // Base da mesma cor do contorno, nos dois temas
+    shadow: isDark ? colors.gray[700] : colors.gray[200],
     pressBg: isDark ? colors.gray[800] : colors.gray[100],
   };
 }

@@ -34,7 +34,7 @@ export function WelcomeStep({ firstName, isDark, theme, reduce }: Props) {
         <Float reduce={reduce} delay={500} style={styles.xpPill}>
           <ChunkyView
             radius={999}
-            shadowColor={isDark ? tw.shadowDark : tw.purple200}
+            shadowColor={isDark ? tw.purple900 : tw.purple200}
             style={[
               styles.pill,
               { borderColor: isDark ? tw.purple900 : tw.purple200, backgroundColor: isDark ? colors.gray[800] : '#fff' },
@@ -46,7 +46,7 @@ export function WelcomeStep({ firstName, isDark, theme, reduce }: Props) {
         <Float reduce={reduce} delay={750} style={styles.streakPill}>
           <ChunkyView
             radius={999}
-            shadowColor={isDark ? tw.shadowDark : tw.orange200}
+            shadowColor={isDark ? tw.orange900 : tw.orange200}
             style={[
               styles.pill,
               { borderColor: isDark ? tw.orange900 : tw.orange200, backgroundColor: isDark ? colors.gray[800] : '#fff' },

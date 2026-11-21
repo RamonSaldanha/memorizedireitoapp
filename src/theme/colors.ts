@@ -83,7 +83,7 @@ export const colors = {
       ink2: '#d3cfc6',
       muted: '#a6a096',
       line: '#3d3a34',
-      edge: '#100f0d',
+      edge: '#3d3a34',
       tint: '#2d2b27',
       tint2: '#37342f',
       off: '#312f2a',
