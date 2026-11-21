@@ -78,3 +78,9 @@ Port of the web's `Onboarding/Index.vue` (same 8 steps, copy, colors and animati
 
 ### Styling
 NativeWind + Tailwind are installed, but most existing screens use `StyleSheet.create` with values pulled from [src/theme/colors.ts](src/theme/colors.ts), [src/theme/typography.ts](src/theme/typography.ts), [src/theme/shadows.ts](src/theme/shadows.ts). Match the surrounding file's approach rather than mixing in Tailwind classes ad-hoc — the theme tokens are the source of truth that keeps parity with the web.
+
+### Button family and paper tone
+Same system as the web (its `docs/design/componentes.html` and the `.mz-*` classes in `resources/css/app.css`), applied on 20/11/2026.
+- **Paper tone:** `colors.gray` is the warm paper scale, `colors.background`/`card`/`dark` are the paper tokens, and `colors.family` + `familyTokens(isDark)` hold the family colors (brand yellow, danger, choice blue, right/wrong, soft tones). Change them together with the web.
+- **Buttons:** always [GameButton](src/components/ui/GameButton.tsx). Variants that sink: `main` (yellow, one per screen), `second`, `danger`, `success` (only the result bar), `premium` (purple, only Premium and Dia da prova). Calm ones: `tonal`, `tonal-brand`, `tonal-danger`, `outline`, `dashed`, `ghost`. Sizes `xs`/`sm`/`md`/`lg` = 32/40/48/56. `square` for icon-only, `pill` for chips. Old names (`green`, `purple`, `blue`, `white`, `red`) still map to the family. Margins in `style` go to the whole block.
+- **Choices:** [ChoiceCard / ChoiceKey / choiceLook](src/components/ui/ChoiceCard.tsx): blue when chosen, green/red when graded. Only what you press has a base; notices (like [Toast](src/components/ui/Toast.tsx)) are flat, colored by type.
