@@ -1,12 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Check, FileCheck, Target, X, Zap } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 
-// A mesma animação da web (public/img/vencedora.gif): a estudante comemorando no notebook
-const WINNER = require('../../../assets/img/vencedora.gif');
-// 418 × 627 px
-const WINNER_RATIO = 418 / 627;
 import { GameButton } from '../ui/GameButton';
 import { ChoiceCard, ChoiceKey, type ChoiceState } from '../ui/ChoiceCard';
 import { colors } from '../../theme/colors';
@@ -134,86 +130,6 @@ export function ResultText({ correct, children, bold = false }: { correct: boole
 }
 
 /* ===== Fim da fase ===== */
-
-/** Tela de fim (fase, revisão ou desafio): o título, os números e um único botão. O XP sobe contando. */
-export function PhaseComplete({
-  title,
-  count,
-  countLabel,
-  xp,
-  accuracy,
-  onContinue,
-}: {
-  title: string;
-  count: number;
-  countLabel: string;
-  xp: number;
-  accuracy: number;
-  onContinue: () => void;
-}) {
-  const { isDark } = useAppearance();
-  const shownXp = useCountUp(xp, 300);
-  const border = isDark ? colors.gray[700] : colors.gray[200];
-  const xpColor = isDark ? colors.family.brand : colors.family.brandEdge;
-
-  return (
-    <View style={styles.completeWrap}>
-      <View style={styles.completeHero}>
-        <Image source={WINNER} style={styles.winner} resizeMode="contain" accessibilityIgnoresInvertColors />
-
-        <Text style={[styles.completeTitle, { color: isDark ? '#fff' : colors.gray[900] }]}>{title}</Text>
-        <Text style={[styles.completeText, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>
-          Você está um passo mais perto da aprovação.
-        </Text>
-      </View>
-
-      <View style={[styles.stats, { borderColor: border }]}>
-        <Stat icon={<FileCheck size={20} color={isDark ? '#4ade80' : colors.green[600]} />} value={String(count)} label={countLabel} color={isDark ? '#4ade80' : colors.green[600]} />
-        <View style={[styles.statDivider, { backgroundColor: border }]} />
-        <Stat icon={<Zap size={20} color={xpColor} fill={xpColor} />} value={String(shownXp)} label="XP recebido" color={xpColor} />
-        <View style={[styles.statDivider, { backgroundColor: border }]} />
-        <Stat icon={<Target size={20} color={colors.blue[500]} />} value={`${accuracy}%`} label="Precisão" color={colors.blue[500]} />
-      </View>
-
-      <GameButton variant="purple" size="lg" fullWidth onPress={onContinue} style={{ marginTop: 24 }}>
-        Continuar
-      </GameButton>
-    </View>
-  );
-}
-
-function Stat({ icon, value, label, color }: { icon: React.ReactNode; value: string; label: string; color: string }) {
-  const { isDark } = useAppearance();
-  return (
-    <View style={styles.stat}>
-      <View style={styles.statValueRow}>
-        {icon}
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-      </View>
-      <Text style={[styles.statLabel, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>{label}</Text>
-    </View>
-  );
-}
-
-function useCountUp(target: number, delay = 0) {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    let frame: ReturnType<typeof setInterval> | undefined;
-    const start = setTimeout(() => {
-      const began = Date.now();
-      frame = setInterval(() => {
-        const t = Math.min(1, (Date.now() - began) / 900);
-        setShown(Math.round(target * (1 - Math.pow(1 - t, 3))));
-        if (t >= 1 && frame) clearInterval(frame);
-      }, 30);
-    }, delay);
-    return () => {
-      clearTimeout(start);
-      if (frame) clearInterval(frame);
-    };
-  }, [target]);
-  return shown;
-}
 
 /* ===== Alternativas ===== */
 
@@ -404,19 +320,6 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 18, fontWeight: '800' },
   resultBody: { marginTop: 8, gap: 4 },
   resultText: { fontSize: 14, lineHeight: 20 },
-
-  completeWrap: { flex: 1, paddingHorizontal: 20, paddingBottom: 24 },
-  completeHero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
-  // Altura da web (h-56); a largura segue a proporção da imagem
-  winner: { height: 224, width: 224 * WINNER_RATIO },
-  completeTitle: { marginTop: 16, fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  completeText: { marginTop: 8, fontSize: 16, textAlign: 'center' },
-  stats: { flexDirection: 'row', borderWidth: 2, borderRadius: 16 },
-  stat: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 },
-  statValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { marginTop: 2, fontSize: 13 },
-  statDivider: { width: 2 },
 
   choices: { gap: 10 },
   choice: { alignItems: 'flex-start' },

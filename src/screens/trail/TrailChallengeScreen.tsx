@@ -14,7 +14,8 @@ import {
   type CheckpointStepResponse,
 } from '../../api/trail';
 import { GuidedSummary, ReadingPanel, useGuidedReading } from '../../components/trail/GuidedSummary';
-import { ChoiceList, PhaseComplete, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { ChoiceList, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { GameButton } from '../../components/ui/GameButton';
 import { useConfetti } from '../../hooks/useConfetti';
@@ -72,6 +73,8 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const updateFromApi = useUserStore((s) => s.updateFromApi);
+  // Quem assina pula o convite Premium do fim de fase
+  const hasInfiniteLives = useUserStore((s) => s.hasInfiniteLives);
   const { ConfettiView, fire: fireConfetti } = useConfetti();
   const { playPhaseComplete } = useGameSounds();
 
@@ -226,13 +229,15 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
   if (stage === 'done' || !step) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <PhaseComplete
-          title={isReview ? 'Revisão concluída!' : 'Desafio concluído!'}
+        <PhaseEnd
+          title={isReview ? 'Revisão' : 'Desafio'}
+          mark={isReview ? 'concluída!' : 'concluído!'}
           count={answeredCount}
           countLabel={answeredCount === 1 ? 'Questão' : 'Questões'}
           xp={xpGained}
           accuracy={accuracy}
-          onContinue={onExit}
+          premium={hasInfiniteLives}
+          onDone={onExit}
         />
         <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
         <ConfettiView />

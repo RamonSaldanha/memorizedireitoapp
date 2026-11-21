@@ -20,7 +20,8 @@ import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
 import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
-import { ConfirmSheet, PhaseComplete, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { ConfirmSheet, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useGapSelections } from '../../hooks/useGapSelections';
@@ -269,13 +270,15 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
   if (stage === 'done') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <PhaseComplete
-          title={data.isReview ? 'Revisão concluída!' : 'Fase concluída!'}
+        <PhaseEnd
+          title={data.isReview ? 'Revisão' : 'Fase'}
+          mark="concluída!"
           count={total}
           countLabel="Desafios"
           xp={xpGained}
           accuracy={accuracy}
-          onContinue={() => navigation.goBack()}
+          premium={hasInfiniteLives}
+          onDone={() => navigation.goBack()}
         />
         <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
         <ConfettiView />
