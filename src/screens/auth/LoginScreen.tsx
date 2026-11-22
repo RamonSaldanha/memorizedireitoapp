@@ -39,6 +39,7 @@ export function LoginScreen({ navigation }: Props) {
       updateFromApi({
         lives: res.data.user.lives,
         has_infinite_lives: res.data.user.has_infinite_lives,
+        energy: res.data.user.energy,
         xp: res.data.user.xp,
         name: res.data.user.name,
         avatar_config: res.data.user.avatar_config,

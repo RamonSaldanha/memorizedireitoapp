@@ -5,6 +5,33 @@ import type { ActiveSegment, CompletedSegment, DisciplineLevelUp, SegmentAnswer 
 // recebe em /beta/play; os tipos seguem resources/js/types/beta-play.ts e
 // resources/js/types/study-material.ts do site.
 
+/* ===== Energia ===== */
+
+/** Energia do mapa novo (EnergyService::payload no servidor). */
+export type EnergyState = {
+  value: number;
+  max: number;
+  // Hora do próximo +1 (nula com a barra cheia ou infinita)
+  next_at: string | null;
+  infinite: boolean;
+};
+
+/** Combo: a sequência de acertos fechou um múltiplo e devolveu energia. */
+export type EnergyCombo = { streak: number; gained: number };
+
+/** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */
+export type EnergySpend = { energy: EnergyState; combo: EnergyCombo | null; out_of_energy: boolean };
+
+/** Tela sem energia: a energia, a revisão sugerida (fase concluída mais esquecida) e o anúncio. */
+export type EnergyStatusResponse = {
+  energy: EnergyState;
+  review: { id: number; legislation_title: string } | null;
+  ad_reward: number;
+};
+
+/** Mínimo para abrir uma fase nova (config/energy.php no servidor). */
+export const PHASE_OPEN_ENERGY = 10;
+
 /* ===== Mapa ===== */
 
 export type TrailGroupPhase = { id: number; is_complete: boolean; is_current: boolean };
@@ -81,6 +108,7 @@ export type TrailPhaseResponse = {
   phaseBlocks: CompletedSegment[];
   earlierBlocks: CompletedSegment[];
   hasMoreAbove: boolean;
+  energy: EnergyState;
 };
 
 export type TrailChallengeResult = {
@@ -90,12 +118,10 @@ export type TrailChallengeResult = {
   total_count: number;
 };
 
-export type TrailFailResponse = { lost_life: boolean; lives: number; out_of_lives: boolean };
-
 export type TrailFinishResponse = {
   xp_gained: number;
   discipline_level_up: DisciplineLevelUp | null;
-  user: { lives: number; xp: number; has_infinite_lives: boolean };
+  user: { lives: number; xp: number; has_infinite_lives: boolean; energy: EnergyState };
 };
 
 /* ===== Desafio do quadrado (material de estudo) ===== */
@@ -142,6 +168,7 @@ export type CheckpointMaterial = {
 export type CheckpointResponse = {
   checkpoint: { key: string; section_number: number; step_number: number; total: number; completed: number };
   materials: CheckpointMaterial[];
+  energy: EnergyState;
 };
 
 export type CheckpointStepResponse = {
@@ -152,7 +179,7 @@ export type CheckpointStepResponse = {
   user: { xp: number };
 };
 
-export type CheckpointAnswerResponse = CheckpointStepResponse & {
+export type CheckpointAnswerResponse = CheckpointStepResponse & EnergySpend & {
   is_correct: boolean;
   correct_answer: string;
   explanation: string;
@@ -169,6 +196,8 @@ export type ExamAttempt = {
   seconds_left: number;
   seconds_total: number;
   xp: number;
+  // Energia somada na prova até aqui (só é creditada na entrega)
+  energy: number;
   questions: ExamQuestion[];
   answers: Record<string, ExamGiven>;
 };
@@ -180,9 +209,10 @@ export type ExamResult = {
   answered: number;
   total: number;
   xp_gained: number;
+  energy_gained: number;
   best_correct: number;
   discipline_level_up: DisciplineLevelUp | null;
-  user: { xp: number };
+  user: { xp: number; energy: EnergyState };
   review: ExamReviewItem[];
 };
 
@@ -204,13 +234,14 @@ export type ExamResponse = {
 export type ExamAnswerResponse = {
   is_correct: boolean;
   correct_answer: string;
-  // XP somado na prova até aqui (só é creditado na entrega)
+  // XP e energia somados na prova até aqui (só são creditados na entrega)
   xp: number;
+  energy: number;
   finished: boolean;
   result: ExamResult | null;
 };
 
-/** Erro da API com o código que ela manda (`no_lives`, `unavailable`, `trail_disabled`). */
+/** Erro da API com o código que ela manda (`no_energy`, `unavailable`, `trail_disabled`). */
 export function apiErrorCode(error: unknown): string | null {
   const data = (error as { response?: { data?: { code?: string } } })?.response?.data;
   return data?.code ?? null;
@@ -220,7 +251,8 @@ export const trailApi = {
   map: (before = 0, after = 0) => apiClient.get<TrailMapResponse>('/trail', { params: { before, after } }),
 
   phase: (phaseId: number) => apiClient.get<TrailPhaseResponse>(`/trail/phases/${phaseId}`),
-  fail: () => apiClient.post<TrailFailResponse>('/trail/fail'),
+  // Cada bloco verificado, certo ou errado: gasta a energia na hora
+  attempt: (phaseId: number, correct: boolean) => apiClient.post<EnergySpend>('/trail/attempt', { phase_id: phaseId, correct }),
   finish: (phaseId: number, results: TrailChallengeResult[]) =>
     apiClient.post<TrailFinishResponse>('/trail/finish', { phase_id: phaseId, results }),
 
@@ -235,4 +267,7 @@ export const trailApi = {
   answerExam: (key: string, question: string, answer: string) =>
     apiClient.post<ExamAnswerResponse>(`/trail/exams/${key}/answer`, { question, answer }),
   finishExam: (key: string) => apiClient.post<ExamResult>(`/trail/exams/${key}/finish`),
+
+  energy: () => apiClient.get<EnergyStatusResponse>('/trail/energy'),
+  rewardEnergy: () => apiClient.post<{ success: boolean; energy: EnergyState }>('/trail/energy/reward'),
 };

@@ -13,9 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Heart, Infinity as InfinityIcon } from 'lucide-react-native';
 import { playApi, requiredCorrect, type ActiveSegment, type CompletedSegment, type DisciplineLevelUp, type SegmentAnswer } from '../../api/play';
-import { apiErrorCode, trailApi, type TrailChallengeResult } from '../../api/trail';
+import { apiErrorCode, trailApi, type EnergyCombo, type TrailChallengeResult } from '../../api/trail';
 import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
@@ -23,6 +22,7 @@ import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { ConfirmSheet, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
+import { EnergyPill } from '../../components/ui/EnergyPill';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useGapSelections } from '../../hooks/useGapSelections';
 import { useGameSounds } from '../../hooks/useGameSounds';
@@ -41,17 +41,21 @@ function toast(message: string) {
 
 /**
  * Fase do mapa novo, como a da web (BetaPlay/Phase.vue): a fase inteira fica no aparelho e
- * nada é gravado antes do último desafio. Errar tira a vida na hora (`/trail/fail`) e o mesmo
- * desafio volta em branco; o fim grava tudo de uma vez (`/trail/finish`) e dá o XP. Sair no
- * meio perde a fase.
+ * nada é gravado antes do último desafio. Cada bloco verificado gasta energia na hora
+ * (`/trail/attempt`; acertos seguidos dão combo) e o bloco errado volta em branco; o fim grava
+ * tudo de uma vez (`/trail/finish`) e dá o XP. Sair no meio perde a fase, e a energia acabar
+ * no meio também.
  */
 export function TrailPhaseScreen({ route, navigation }: Props) {
   const { phaseId } = route.params;
   const queryClient = useQueryClient();
   const { isDark, theme } = useAppearance();
-  const lives = useUserStore((s) => s.lives);
   const hasInfiniteLives = useUserStore((s) => s.hasInfiniteLives);
+  const energy = useUserStore((s) => s.energy);
+  const setEnergy = useUserStore((s) => s.setEnergy);
   const updateFromApi = useUserStore((s) => s.updateFromApi);
+  const [combo, setCombo] = useState<EnergyCombo | null>(null);
+  const [outOfEnergy, setOutOfEnergy] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['trail-phase', phaseId],
@@ -60,10 +64,10 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
     retry: false,
   });
 
-  // Sem vidas ou fase que não abre: sai daqui
+  // Sem energia ou fase que não abre: sai daqui
   useEffect(() => {
     const code = apiErrorCode(error);
-    if (code === 'no_lives') navigation.replace('NoLives');
+    if (code === 'no_energy' || code === 'no_lives') navigation.replace('NoEnergy');
     else if (code === 'unavailable') {
       toast('Esta fase não está disponível.');
       navigation.goBack();
@@ -103,6 +107,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
     setQueue(data.challenges);
     setEarlier(data.earlierBlocks);
     setHasMore(data.hasMoreAbove);
+    if (data.energy) setEnergy(data.energy);
   }, [data?.phaseId]);
 
   const total = data?.challenges.length ?? 0;
@@ -152,21 +157,22 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
     setGapsAnswered((n) => n + result.total_count);
     setGapsCorrect((n) => n + result.correct_count);
     setLastResult({ ...result, passed: isPass });
+    setCombo(null);
 
     if (isPass) {
       setPassed((prev) => ({ ...prev, [result.segment_uuid]: result }));
-      return;
     }
 
-    // Errou: a vida sai na hora (o progresso continua só no aparelho)
+    // Certo ou errado, a energia sai na hora (o progresso continua só no aparelho)
     try {
-      const { data: fail } = await trailApi.fail();
-      updateFromApi({ lives: fail.lives, has_infinite_lives: hasInfiniteLives, xp: useUserStore.getState().xp });
-      if (fail.out_of_lives) navigation.replace('NoLives');
+      const { data: spent } = await trailApi.attempt(phaseId, isPass);
+      setEnergy(spent.energy);
+      setCombo(spent.combo);
+      setOutOfEnergy(spent.out_of_energy);
     } catch {
       // Falha de rede aqui não trava a fase
     }
-  }, [active?.uuid, gaps.allFilled, gaps.userSelections, verified, hasInfiniteLives]);
+  }, [active?.uuid, gaps.allFilled, gaps.userSelections, verified, phaseId]);
 
   const finish = useCallback(
     async (results: Record<string, TrailChallengeResult>) => {
@@ -181,7 +187,12 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
         setLevelUp(done.discipline_level_up);
         queryClient.invalidateQueries({ queryKey: ['trail-map'] });
         queryClient.invalidateQueries({ queryKey: ['disciplines'] });
-      } catch {
+      } catch (err) {
+        // 409: a energia acabou no meio e a fase foi perdida
+        if ((err as { response?: { status?: number } })?.response?.status === 409) {
+          navigation.replace('NoEnergy');
+          return;
+        }
         setStage('failed-to-save');
       }
     },
@@ -190,6 +201,11 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
 
   const next = useCallback(() => {
     if (!lastResult) return;
+
+    if (outOfEnergy) {
+      navigation.replace('NoEnergy');
+      return;
+    }
 
     // Errou: o mesmo desafio volta em branco e só passa adiante quando for vencido
     const rest = lastResult.passed ? queue.slice(1) : queue;
@@ -203,7 +219,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
 
     if (rest.length === 0) finish(passed);
     else showActive();
-  }, [lastResult, queue, passed, finish]);
+  }, [lastResult, queue, passed, finish, outOfEnergy]);
 
   const exit = () => {
     if (stage === 'playing' && passedCount + gapsAnswered > 0) {
@@ -317,12 +333,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
         progress={(passedCount / Math.max(1, total)) * 100}
         onExit={exit}
         caption={`${data.legislation.title} · Passo ${data.phaseNumber} de ${data.phasesPerGroup}`}
-        right={
-          <View style={styles.lives}>
-            <Heart size={20} color={colors.red[500]} fill={colors.red[500]} />
-            {hasInfiniteLives ? <InfinityIcon size={20} color={colors.red[500]} /> : <Text style={styles.livesText}>{lives}</Text>}
-          </View>
-        }
+        right={<EnergyPill energy={energy} />}
       />
 
       <ScrollView
@@ -380,7 +391,21 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
       ) : null}
 
       {lastResult ? (
-        <ResultBar correct={lastResult.passed} buttonLabel={lastResult.passed ? 'Continuar' : 'Tentar de novo'} onContinue={next}>
+        <ResultBar
+          correct={lastResult.passed}
+          buttonLabel={outOfEnergy ? 'Sair' : lastResult.passed ? 'Continuar' : 'Tentar de novo'}
+          onContinue={next}
+        >
+          {combo ? (
+            <ResultText correct={lastResult.passed} bold>
+              Sequência de {combo.streak}!{combo.gained > 0 ? ` +${combo.gained} de energia` : ''}
+            </ResultText>
+          ) : null}
+          {outOfEnergy ? (
+            <ResultText correct={lastResult.passed} bold>
+              Sua energia acabou. Esta fase vai recomeçar.
+            </ResultText>
+          ) : null}
           {lastResult.answers.length > 0 ? (
             <ResultText correct={lastResult.passed}>
               {lastResult.answers.length - wrong.length} de {lastResult.answers.length} corretas
@@ -429,8 +454,6 @@ const styles = StyleSheet.create({
   message: { fontSize: 15, textAlign: 'center' },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
   active: { paddingVertical: 16 },
-  lives: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  livesText: { color: colors.red[500], fontWeight: '800', fontSize: 16 },
   struck: { textDecorationLine: 'line-through', opacity: 0.7 },
   bold: { fontWeight: '800' },
 });

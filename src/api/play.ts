@@ -1,9 +1,9 @@
 import { apiClient } from './client';
 
-// Peças do jogo de lacunas usadas pelo mapa (/trail) e pelo onboarding, e as duas rotas de
-// /play que o app ainda usa: o texto anterior da lei, ao rolar a fase para cima, e a vida
-// ganha na tela sem vidas. O mapa antigo (/play/map) saiu do app; a rota continua no
-// servidor para quem tem build antiga.
+// Peças do jogo de lacunas usadas pelo mapa (/trail) e pelo onboarding, e a rota de /play que
+// o app ainda usa: o texto anterior da lei, ao rolar a fase para cima. O mapa antigo
+// (/play/map) e a vida do anúncio saíram do app (agora é energia, em /trail); as rotas
+// continuam no servidor para quem tem build antiga.
 
 /* ===== Tipos do gameplay (blocos / desafio ativo) ===== */
 export type Lacuna = {
@@ -86,9 +86,4 @@ export const playApi = {
     apiClient.get<LoadMoreAboveResponse>(`/play/phase/${phaseId}/more-above`, {
       params: { before_position: beforePosition, legislation_uuid: legislationUuid, limit },
     }),
-
-  rewardLife: () =>
-    apiClient.post<{ success: boolean; user: { lives: number; has_infinite_lives: boolean } }>(
-      '/play/reward-life',
-    ),
 };

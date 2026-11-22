@@ -43,6 +43,7 @@ function AppBootstrap() {
           updateFromApi({
             lives: res.data.lives,
             has_infinite_lives: res.data.has_infinite_lives,
+            energy: res.data.energy,
             xp: res.data.xp,
             current_streak: res.data.current_streak,
             longest_streak: res.data.longest_streak,

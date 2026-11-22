@@ -258,7 +258,7 @@ export function ProfileScreen() {
             <View style={styles.rowContent}>
               <Text style={[styles.rowLabel, { color: theme.foreground }]}>Premium</Text>
               <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
-                {hasInfiniteLives ? 'Assinatura ativa' : 'Assine para vidas infinitas'}
+                {hasInfiniteLives ? 'Assinatura ativa' : 'Assine para energia infinita'}
               </Text>
             </View>
             <ChevronRight size={18} color={colors.gray[400]} />

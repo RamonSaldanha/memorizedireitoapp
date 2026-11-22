@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { DisciplineLevelUp } from '../../api/play';
 import {
+  apiErrorCode,
   boardLabel,
   trailApi,
   type CheckpointAnswerResponse,
@@ -18,6 +19,7 @@ import { ChoiceList, ResultBar, ResultText, TrailTopBar } from '../../components
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { GameButton } from '../../components/ui/GameButton';
+import { EnergyPill } from '../../components/ui/EnergyPill';
 import { useConfetti } from '../../hooks/useConfetti';
 import { useGameSounds } from '../../hooks/useGameSounds';
 import { useAppearance } from '../../hooks/useAppearance';
@@ -41,6 +43,11 @@ export function TrailChallengeScreen({ route, navigation }: Props) {
     retry: false,
   });
 
+  // Desafio por fazer e sem energia: vai para a tela sem energia
+  useEffect(() => {
+    if (apiErrorCode(error) === 'no_energy') navigation.replace('NoEnergy');
+  }, [error]);
+
   if (!data) {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: theme.background }]}>
@@ -58,21 +65,28 @@ export function TrailChallengeScreen({ route, navigation }: Props) {
     );
   }
 
-  return <Challenge data={data} onExit={() => navigation.goBack()} />;
+  return <Challenge data={data} onExit={() => navigation.goBack()} onOutOfEnergy={() => navigation.replace('NoEnergy')} />;
 }
 
 /**
  * Desafio do quadrado, como o da web (BetaPlay/Checkpoint.vue): o resumo do material, lido
  * com a leitura guiada, e logo depois as questões dele. Cada passo é gravado na hora; sair a
  * qualquer momento não perde nada e a volta é no primeiro passo que falta. Se tudo já foi
- * feito, é uma revisão: só corrige.
+ * feito, é uma revisão: só corrige. Cada questão nova gasta energia (3 certas seguidas dão
+ * combo); se ela acaba, a pessoa sai e volta de onde parou quando tiver energia.
  */
-function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => void }) {
+function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; onExit: () => void; onOutOfEnergy: () => void }) {
   const { checkpoint, materials } = data;
   const { isDark, theme } = useAppearance();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const updateFromApi = useUserStore((s) => s.updateFromApi);
+  const energy = useUserStore((s) => s.energy);
+  const setEnergy = useUserStore((s) => s.setEnergy);
+  const [outOfEnergy, setOutOfEnergy] = useState(false);
+  useEffect(() => {
+    if (data.energy) setEnergy(data.energy);
+  }, []);
   // Quem assina pula o convite Premium do fim de fase
   const hasInfiniteLives = useUserStore((s) => s.hasInfiniteLives);
   const { ConfettiView, fire: fireConfetti } = useConfetti();
@@ -146,8 +160,7 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
 
   const applyStep = (response: CheckpointStepResponse) => {
     setXpGained((xp) => xp + response.xp_gained);
-    const user = useUserStore.getState();
-    updateFromApi({ lives: user.lives, has_infinite_lives: user.hasInfiniteLives, xp: response.user.xp });
+    updateFromApi({ xp: response.user.xp });
     pendingLevelUp.current = response.discipline_level_up ?? pendingLevelUp.current;
   };
 
@@ -187,6 +200,8 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
       if (response.is_correct) setCorrectCount((n) => n + 1);
       applyStep(response);
       setFeedback(response);
+      if (response.energy) setEnergy(response.energy);
+      setOutOfEnergy(Boolean(response.out_of_energy));
       // O comentário aparece embaixo das alternativas
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     } catch {
@@ -197,6 +212,10 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
   };
 
   const advance = () => {
+    if (outOfEnergy) {
+      onOutOfEnergy();
+      return;
+    }
     if (pendingLevelUp.current) {
       setLevelUp(pendingLevelUp.current);
       pendingLevelUp.current = null;
@@ -255,6 +274,7 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
       <TrailTopBar
         progress={progressPercent}
         onExit={onExit}
+        right={<EnergyPill energy={energy} />}
         caption={`${step.material.legislation_title} · Passo ${checkpoint.step_number} de ${checkpoint.step_number} · Desafio${
           materials.length > 1 ? ` · Material ${materialNumber} de ${materials.length}` : ''
         }`}
@@ -349,7 +369,17 @@ function Challenge({ data, onExit }: { data: CheckpointResponse; onExit: () => v
       {step.kind === 'summary' && summaryConfirmed ? <ResultBar correct title="Resumo concluído!" onContinue={advance} /> : null}
 
       {step.kind === 'question' && feedback ? (
-        <ResultBar correct={feedback.is_correct} onContinue={advance}>
+        <ResultBar correct={feedback.is_correct} buttonLabel={outOfEnergy ? 'Sair' : undefined} onContinue={advance}>
+          {feedback.combo ? (
+            <ResultText correct={feedback.is_correct} bold>
+              Sequência de {feedback.combo.streak}!{feedback.combo.gained > 0 ? ` +${feedback.combo.gained} de energia` : ''}
+            </ResultText>
+          ) : null}
+          {outOfEnergy ? (
+            <ResultText correct={feedback.is_correct} bold>
+              Sua energia acabou. O que você fez fica guardado.
+            </ResultText>
+          ) : null}
           {!feedback.is_correct ? (
             <ResultText correct={false}>
               Gabarito: <Text style={{ fontWeight: '800', textTransform: 'capitalize' }}>{feedback.correct_answer}</Text>

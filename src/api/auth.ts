@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type { AvatarConfig } from '../lib/avatar';
 import type { WelcomeOffer } from './onboarding';
+import type { EnergyState } from './trail';
 
 export type UserData = {
   id: number;
@@ -8,6 +9,8 @@ export type UserData = {
   email: string;
   lives: number;
   has_infinite_lives: boolean;
+  // Energia do mapa novo. Opcional: servidor antigo não manda.
+  energy?: EnergyState;
   xp: number;
   current_streak: number;
   longest_streak: number;

@@ -18,7 +18,7 @@ type Props = {
 };
 
 const BENEFITS = [
-  { title: 'Vidas infinitas', text: 'Erre à vontade e siga jogando' },
+  { title: 'Energia infinita', text: 'Jogue sem parar, sem esperar recarga' },
   { title: 'Fantasias exclusivas', text: 'Toga e astronauta para o seu avatar' },
   { title: 'Sem anúncios', text: 'Só você e a lei seca' },
   { title: 'Todas as legislações', text: 'A trilha que quiser, sem limite' },

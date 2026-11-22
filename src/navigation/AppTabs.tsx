@@ -12,7 +12,7 @@ import { TrailMapScreen } from '../screens/trail/TrailMapScreen';
 import { TrailPhaseScreen } from '../screens/trail/TrailPhaseScreen';
 import { TrailChallengeScreen } from '../screens/trail/TrailChallengeScreen';
 import { TrailExamScreen } from '../screens/trail/TrailExamScreen';
-import { NoLivesScreen } from '../screens/play/NoLivesScreen';
+import { NoEnergyScreen } from '../screens/play/NoEnergyScreen';
 import { OfensivaScreen } from '../screens/OfensivaScreen';
 import { DisciplinesScreen } from '../screens/DisciplinesScreen';
 import { RankingScreen } from '../screens/RankingScreen';
@@ -27,7 +27,7 @@ export type PlayStackParamList = {
   // O mapa de quadrados (o mesmo do beta da web) e os passos dele: a fase, o desafio do
   // quadrado e o Dia da prova
   PlayMap: undefined;
-  NoLives: undefined;
+  NoEnergy: undefined;
   Ofensiva: undefined;
   TrailPhase: { phaseId: number };
   TrailChallenge: { key: string };
@@ -40,7 +40,7 @@ function PlayStackNavigator() {
   return (
     <PlayStack.Navigator screenOptions={{ headerShown: false }}>
       <PlayStack.Screen name="PlayMap" component={TrailMapScreen} />
-      <PlayStack.Screen name="NoLives" component={NoLivesScreen} />
+      <PlayStack.Screen name="NoEnergy" component={NoEnergyScreen} />
       <PlayStack.Screen name="Ofensiva" component={OfensivaScreen} />
       <PlayStack.Screen name="TrailPhase" component={TrailPhaseScreen} />
       <PlayStack.Screen name="TrailChallenge" component={TrailChallengeScreen} />

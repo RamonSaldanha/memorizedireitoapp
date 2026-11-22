@@ -24,7 +24,6 @@ import { WelcomeOfferBanner } from '../../components/WelcomeOfferBanner';
 import { GameButton } from '../../components/ui/GameButton';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useReduceMotion } from '../../hooks/useReduceMotion';
-import { useUserStore } from '../../stores/userStore';
 import { colors } from '../../theme/colors';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
@@ -79,8 +78,6 @@ export function TrailMapScreen() {
   const navigation = useNavigation<Nav>();
   const { isDark, theme } = useAppearance();
   const { width } = useWindowDimensions();
-  const lives = useUserStore((s) => s.lives);
-  const hasInfiniteLives = useUserStore((s) => s.hasInfiniteLives);
 
   const [windowExtra, setWindowExtra] = useState({ before: 0, after: 0 });
   const { data, isLoading, isError, refetch } = useQuery({
@@ -216,13 +213,9 @@ export function TrailMapScreen() {
   const [openGroupId, setOpenGroupId] = useState<number | null>(null);
   const [openExam, setOpenExam] = useState<number | null>(null);
 
-  const openPhase = (phaseId: number) => {
-    if (lives <= 0 && !hasInfiniteLives) {
-      navigation.navigate('NoLives');
-      return;
-    }
-    navigation.navigate('TrailPhase', { phaseId });
-  };
+  // Quem decide se há energia é o servidor (a recarga é por hora e a revisão abre sem
+  // energia): sem ela, a fase e o desafio respondem `no_energy` e a tela vai para NoEnergy.
+  const openPhase = (phaseId: number) => navigation.navigate('TrailPhase', { phaseId });
 
   const openCurrentStep = (group: TrailGroup) => {
     if (group.current_phase_id) openPhase(group.current_phase_id);

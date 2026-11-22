@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
-import { Heart, Gem, InfinityIcon, Flame } from 'lucide-react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Gem, Flame } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,47 +9,22 @@ import { colors } from '../../theme/colors';
 import { useUserStore } from '../../stores/userStore';
 import { useAppearance } from '../../hooks/useAppearance';
 import { Avatar } from '../ui/Avatar';
+import { EnergyPill } from '../ui/EnergyPill';
 import type { PlayStackParamList, TabParamList } from '../../navigation/AppTabs';
 
 // O topo aparece em todas as abas, como o cabeçalho da web: a ofensiva abre na pilha do Jogar e o avatar leva ao Perfil.
 type Nav = CompositeNavigationProp<NativeStackNavigationProp<PlayStackParamList>, BottomTabNavigationProp<TabParamList>>;
 
 export function AppHeader() {
-  const { lives, hasInfiniteLives, xp, currentStreak, name, avatarConfig } = useUserStore();
+  const { energy, hasInfiniteLives, xp, currentStreak, name, avatarConfig } = useUserStore();
   const { isDark, theme } = useAppearance();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
-  const prevLives = useRef(lives);
-  const heartScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (prevLives.current !== lives) {
-      Animated.sequence([
-        Animated.timing(heartScale, { toValue: 1.3, duration: 150, useNativeDriver: true }),
-        Animated.timing(heartScale, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]).start();
-      prevLives.current = lives;
-    }
-  }, [lives]);
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: theme.background, borderBottomColor: theme.border }]}>
-      {/* Vidas */}
-      <View style={[styles.pill, { backgroundColor: isDark ? colors.gray[900] : colors.pink[50] }]}>
-        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-          <Heart
-            size={20}
-            color={hasInfiniteLives ? colors.blue[500] : lives > 0 ? colors.red[500] : colors.gray[400]}
-          />
-        </Animated.View>
-        {hasInfiniteLives ? (
-          <InfinityIcon size={16} color={colors.blue[500]} />
-        ) : (
-          <Text style={[styles.pillText, { color: lives > 0 ? colors.red[500] : colors.gray[400] }]}>
-            {lives}
-          </Text>
-        )}
-      </View>
+      {/* Energia (o mapa novo usa energia no lugar das vidas) */}
+      <EnergyPill energy={energy} pill />
 
       {/* Ofensiva (streak) */}
       <Pressable
@@ -74,7 +49,7 @@ export function AppHeader() {
         <Text style={[styles.xpValue, { color: isDark ? colors.family.brand : colors.family.light.brandSoftInk }]}>{xp.toLocaleString('pt-BR')}</Text>
       </View>
 
-      {/* Gema (vidas infinitas) */}
+      {/* Gema (energia infinita) */}
       {!hasInfiniteLives && (
         <Pressable style={styles.gemButton}>
           <Gem size={24} color={colors.blue[500]} />

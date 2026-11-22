@@ -25,7 +25,7 @@ The play screens are intentionally being aligned **pixel-perfect with the web ve
 ### Boot sequence
 [App.tsx](App.tsx) wraps everything in `QueryClientProvider` (TanStack Query, `staleTime: 30s`, `retry: 1`) and renders `AppBootstrap`, which:
 1. Calls `useAuthStore.initialize()` — reads the Sanctum token from `expo-secure-store` (key `sanctum_token`) and loads it into the store. The "Carregando..." screen blocks rendering until this completes.
-2. When `token` becomes truthy, fetches `/me` and pushes the result into both `authStore` (full user) and `userStore` (gameplay-relevant fields: `lives`, `has_infinite_lives`, `xp`).
+2. When `token` becomes truthy, fetches `/me` and pushes the result into both `authStore` (full user) and `userStore` (gameplay-relevant fields: `energy`, `has_infinite_lives`, `xp`).
 3. Renders `RootNavigator`, which **switches between `AuthStack` and `AppTabs` purely based on `authStore.token`** ([src/navigation/RootNavigator.tsx](src/navigation/RootNavigator.tsx)). There is no explicit "logout navigation" — clearing the token is what unmounts the app stack.
 
 ### API layer pattern
@@ -37,9 +37,9 @@ Per-domain API modules (`auth.ts`, `play.ts`, `disciplines.ts`, `legalReferences
 
 ### State: two Zustand stores with deliberate separation
 - [authStore](src/stores/authStore.ts) — `token`, `user` (full `UserData`), persistence via SecureStore. Drives navigation.
-- [userStore](src/stores/userStore.ts) — gameplay HUD state (`lives`, `hasInfiniteLives`, `xp`, plus `name`/`avatar` for the header). Mutations from `playApi.saveProgress` / `rewardLife` responses should be pushed here via `updateFromApi` so the header updates without a re-fetch of `/me`.
+- [userStore](src/stores/userStore.ts) — gameplay HUD state (`energy`, `hasInfiniteLives`, `xp`, plus `name`/`avatar` for the header; `lives` stays for old servers). Energy and XP from the `/trail` responses are pushed here (`setEnergy`, `updateFromApi`) so the header updates without a re-fetch of `/me`.
 
-The split exists because gameplay endpoints return fresh `lives`/`xp` snapshots in their responses; updating `userStore` directly avoids stale HUD values without invalidating auth state.
+The split exists because gameplay endpoints return fresh `energy`/`xp` snapshots in their responses; updating `userStore` directly avoids stale HUD values without invalidating auth state.
 
 ### Navigation shape
 - Root: native-stack with `Auth` | `App` (token-gated).
@@ -49,11 +49,17 @@ The split exists because gameplay endpoints return fresh `lives`/`xp` snapshots 
 Port of the web's beta map (`BetaPlay/Map.vue`, `Phase.vue`, `Checkpoint.vue`, `Exam.vue`), through the `/trail` API routes ([src/api/trail.ts](src/api/trail.ts)). The server builds the data with the same methods as the web, so the rules live there (see the web project's CLAUDE.md, "Material de estudo" and "Mapa novo no app").
 - It is the app's only map: [TrailMapScreen](src/screens/trail/TrailMapScreen.tsx) replaced the old `/play/map` map (the old screens were removed on 19/11/2026). Every logged-in user can use `/trail`; on the web the beta stays admin-only. Older app builds keep using `/play/*`, which stays on the server.
 - Map: same grid as the web (6 columns of `U`, pattern center → right → center → left, `ROW_STEP` 2.6), squares of 4 phases plus the square challenge as 5th step, the Dia da prova beside the last square of each stage. The stage card sits above the scroll and shows the stage in the middle of the screen.
-- Phase ([TrailPhaseScreen](src/screens/trail/TrailPhaseScreen.tsx)): the whole phase stays on the device. A wrong block calls `/trail/fail` (life goes at once) and comes back blank; the end sends every block to `/trail/finish`. Leaving midway loses the phase.
+- Phase ([TrailPhaseScreen](src/screens/trail/TrailPhaseScreen.tsx)): the whole phase stays on the device. Every checked block calls `/trail/attempt` (energy goes at once, combos come back) and a wrong one comes back blank; the end sends every block to `/trail/finish`. Leaving midway loses the phase, and so does running out of energy midway.
 - Square challenge ([TrailChallengeScreen](src/screens/trail/TrailChallengeScreen.tsx)): summary with guided reading, then the questions; each step is saved on the server right away. The summary arrives as `summary_blocks` and [GuidedSummary](src/components/trail/GuidedSummary.tsx) draws it word by word (chunk or line mode, speed, tap a word to jump, hold to pause, 90% coverage to unlock "Concluir"). The web's panel can be dragged; here it is fixed at the bottom right.
 - Dia da prova ([TrailExamScreen](src/screens/trail/TrailExamScreen.tsx)): the server owns the deadline; the clock only shows it and, when the app comes back to the foreground, asks the server again.
 - Shared pieces in [TrailUi](src/components/trail/TrailUi.tsx): top bar, `ResultBar` (plays the correct sound), `PhaseComplete`, `ChoiceList` (swipe right to strike an option), `ConfirmSheet`.
 - Sounds: `assets/audio/correct.wav` and `phase-complete.wav` are the web's Web Audio chimes (`resources/js/lib/sounds.ts`) rendered to files by `npm run sounds` ([scripts/render-sounds.mjs](scripts/render-sounds.mjs)): same notes, envelope and volume, no extra gain (it matched Chrome's OfflineAudioContext sample by sample). Change a chime on the web, change it there too. Played by [useGameSounds](src/hooks/useGameSounds.ts). The onboarding keeps `bell-win.wav`, like the web's onboarding.
+
+### Energy (instead of lives)
+The map uses energy, like the web's beta (rules in the web's `EnergyService`, numbers in its `config/energy.php`; see the web CLAUDE.md, "Energia"). Bar of 25, +1 per hour, a new phase needs 10 to open, a right block costs 1 and a wrong one 2, 5 right in a row give 2 back; review opens with 0 and its combo is capped per day; the square challenge costs 1 per new question (combo of 3); the Dia da prova gives energy and can go up to 50; the ad gives 5; Premium is infinite.
+- The server decides: phase and challenge answer `no_energy` (403) and the screens go to [NoEnergyScreen](src/screens/play/NoEnergyScreen.tsx) (countdown, suggested review from `/trail/energy`, the ad via `/trail/energy/reward`, Premium). The map doesn't gate.
+- [EnergyPill](src/components/ui/EnergyPill.tsx) is the battery with a bolt (the bolt alone is XP), in the header and the top bar of the phase, challenge and exam.
+- `lives` stays on the server for the old site and old app builds; `/trail/fail` only exists for builds before energy.
 
 ### Word bank
 Like the web: the bank keeps every word in its place, a used word leaves an empty slot ([WordChip / EmptyWordSlot](src/components/game/WordChip.tsx)) and the word in the gap has the same chip look; tapping it sends it back. [useGapSelections](src/hooks/useGapSelections.ts) remembers which bank button each gap came from. Pass `bank` to `PhaseControls` to get this layout (the map and the onboarding both do).

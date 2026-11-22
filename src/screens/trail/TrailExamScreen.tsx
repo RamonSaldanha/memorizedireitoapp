@@ -3,7 +3,7 @@ import { ActivityIndicator, AppState, ScrollView, StyleSheet, Text, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Check, Timer, X, Zap } from 'lucide-react-native';
+import { BatteryCharging, Check, Timer, X, Zap } from 'lucide-react-native';
 import type { DisciplineLevelUp } from '../../api/play';
 import {
   boardLabel,
@@ -20,7 +20,7 @@ import { useConfetti } from '../../hooks/useConfetti';
 import { useGameSounds } from '../../hooks/useGameSounds';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useUserStore } from '../../stores/userStore';
-import { colors } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
 import type { PlayStackParamList } from '../../navigation/AppTabs';
 
 type Props = NativeStackScreenProps<PlayStackParamList, 'TrailExam'>;
@@ -81,6 +81,9 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const updateFromApi = useUserStore((s) => s.updateFromApi);
+  // A prova rende energia (por acerto novo e combo, creditada na entrega); quem assina não precisa
+  const showEnergy = useUserStore((s) => !s.energy.infinite);
+  const [energyGained, setEnergyGained] = useState(0);
   const { ConfettiView, fire: fireConfetti } = useConfetti();
   const { playPhaseComplete } = useGameSounds();
 
@@ -136,6 +139,7 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
     setRunning(attempt);
     setAnswers({ ...attempt.answers });
     setXp(attempt.xp);
+    setEnergyGained(attempt.energy ?? 0);
     // Volta na primeira questão ainda sem resposta
     const next = attempt.questions.findIndex((item) => !(item.uuid in attempt.answers));
     setIndex(next === -1 ? 0 : next);
@@ -156,8 +160,8 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
     stopClock();
     setResult(done);
     setXp(done.xp_gained);
-    const user = useUserStore.getState();
-    updateFromApi({ lives: user.lives, has_infinite_lives: user.hasInfiniteLives, xp: done.user.xp });
+    setEnergyGained(done.energy_gained ?? 0);
+    updateFromApi({ xp: done.user.xp, energy: done.user.energy });
     setLevelUp(done.discipline_level_up);
     setConfirmingExit(false);
     setStage('result');
@@ -197,6 +201,7 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
         if (fresh?.attempt) {
           endsAt.current = Date.now() + fresh.attempt.seconds_left * 1000;
           setXp(fresh.attempt.xp);
+          setEnergyGained(fresh.attempt.energy ?? 0);
         } else {
           finishRef.current();
         }
@@ -230,6 +235,7 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
       const given = { answer: selected, is_correct: response.is_correct, correct_answer: response.correct_answer };
       setAnswers((prev) => ({ ...prev, [question.uuid]: given }));
       setXp(response.xp);
+      setEnergyGained(response.energy ?? 0);
       setFeedback(given);
       // Última questão: a prova já foi entregue; o resultado aparece depois do "Continuar"
       if (response.result) {
@@ -284,6 +290,9 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
               <Fact label="Questões" value={String(exam.questions)} />
               <Fact label="Tempo" value={duration(exam.seconds)} border={border} />
               <Fact label="Cada acerto" value={`+${exam.xp_per_correct} XP`} border={border} color={isDark ? colors.purple[400] : colors.purple[600]} />
+              {showEnergy ? (
+                <Fact label="Energia" value="+1 por acerto, +2 a cada 3" border={border} color={familyTokens(isDark).brandSoftInk} />
+              ) : null}
               {exam.attempts > 0 ? (
                 <Fact label="Seu melhor resultado" value={`${exam.best_correct} de ${exam.questions}`} border={border} color={isDark ? '#4ade80' : colors.green[600]} />
               ) : null}
@@ -323,6 +332,9 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
           <View style={styles.resultStats}>
             <ResultStat value={String(result.correct)} label={result.correct === 1 ? 'Acerto' : 'Acertos'} color={isDark ? '#4ade80' : colors.green[600]} border={isDark ? '#14532d' : '#bbf7d0'} />
             <ResultStat value={`+${result.xp_gained}`} label="XP" color={isDark ? colors.purple[400] : colors.purple[600]} border={isDark ? colors.purple[900] : '#e9d5ff'} />
+            {showEnergy ? (
+              <ResultStat value={`+${result.energy_gained ?? 0}`} label="Energia" color={familyTokens(isDark).brandSoftInk} border={familyTokens(isDark).brandSoft2} />
+            ) : null}
             <ResultStat value={String(result.best_correct)} label="Seu melhor" color={strong} border={border} />
           </View>
 
@@ -388,9 +400,17 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
           <Timer size={20} color={secondsLeft <= 30 ? colors.red[500] : strong} strokeWidth={2.5} />
           <Text style={[styles.clockText, { color: secondsLeft <= 30 ? colors.red[500] : strong }]}>{clock(secondsLeft)}</Text>
         </View>
-        <View style={[styles.xp, { backgroundColor: isDark ? '#3b0764' : colors.purple[100] }]}>
-          <Zap size={16} color={isDark ? colors.purple[300] : colors.purple[700]} fill={isDark ? colors.purple[300] : colors.purple[700]} />
-          <Text style={[styles.xpText, { color: isDark ? colors.purple[300] : colors.purple[700] }]}>+{xp} XP</Text>
+        <View style={styles.gains}>
+          <View style={[styles.xp, { backgroundColor: isDark ? '#3b0764' : colors.purple[100] }]}>
+            <Zap size={16} color={isDark ? colors.purple[300] : colors.purple[700]} fill={isDark ? colors.purple[300] : colors.purple[700]} />
+            <Text style={[styles.xpText, { color: isDark ? colors.purple[300] : colors.purple[700] }]}>+{xp} XP</Text>
+          </View>
+          {showEnergy ? (
+            <View style={[styles.xp, { backgroundColor: familyTokens(isDark).brandSoft }]} accessibilityLabel="Energia somada na prova">
+              <BatteryCharging size={16} color={familyTokens(isDark).brandSoftInk} />
+              <Text style={[styles.xpText, { color: familyTokens(isDark).brandSoftInk }]}>+{energyGained}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -483,6 +503,7 @@ const styles = StyleSheet.create({
   clockRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12 },
   clock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   clockText: { fontSize: 18, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  gains: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   xp: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   xpText: { fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] },
 
