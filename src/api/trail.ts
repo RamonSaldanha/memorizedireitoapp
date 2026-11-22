@@ -57,6 +57,8 @@ export type TrailExamState = {
   questions: number;
   seconds: number;
   xp_per_correct: number;
+  // Refazer (da segunda vez em diante) custa energia ao começar
+  retake_energy: number;
   best_correct: number;
   in_progress: boolean;
 };
@@ -223,6 +225,7 @@ export type ExamResponse = {
     questions: number;
     seconds: number;
     xp_per_correct: number;
+    retake_energy: number;
     best_correct: number;
     attempts: number;
   };

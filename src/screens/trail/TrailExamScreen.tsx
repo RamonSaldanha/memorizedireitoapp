@@ -6,6 +6,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BatteryCharging, Check, Timer, X, Zap } from 'lucide-react-native';
 import type { DisciplineLevelUp } from '../../api/play';
 import {
+  apiErrorCode,
   boardLabel,
   trailApi,
   type ExamAttempt,
@@ -51,7 +52,7 @@ export function TrailExamScreen({ route, navigation }: Props) {
     );
   }
 
-  return <Exam data={data} onExit={() => navigation.goBack()} reload={refetch} />;
+  return <Exam data={data} onExit={() => navigation.goBack()} onNoEnergy={() => navigation.replace('NoEnergy')} reload={refetch} />;
 }
 
 function clock(seconds: number): string {
@@ -75,7 +76,17 @@ const answerLabel = (item: { type: string; options: Record<string, string> | nul
  * relógio daqui só mostra, e ao voltar para o app a tela pergunta de novo quanto resta.
  * Errar não custa nada; o XP somado aparece ao lado do relógio e é creditado na entrega.
  */
-function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void; reload: () => Promise<{ data?: ExamResponse }> }) {
+function Exam({
+  data,
+  onExit,
+  onNoEnergy,
+  reload,
+}: {
+  data: ExamResponse;
+  onExit: () => void;
+  onNoEnergy: () => void;
+  reload: () => Promise<{ data?: ExamResponse }>;
+}) {
   const { exam } = data;
   const { isDark, theme } = useAppearance();
   const insets = useSafeAreaInsets();
@@ -219,7 +230,12 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
     try {
       const { data: attempt } = await trailApi.startExam(exam.key);
       enter(attempt);
-    } catch {
+    } catch (err) {
+      // Refazer sem energia: vai para a tela sem energia
+      if (apiErrorCode(err) === 'no_energy') {
+        onNoEnergy();
+        return;
+      }
       setStartError(true);
     } finally {
       setStarting(false);
@@ -290,7 +306,9 @@ function Exam({ data, onExit, reload }: { data: ExamResponse; onExit: () => void
               <Fact label="Questões" value={String(exam.questions)} />
               <Fact label="Tempo" value={duration(exam.seconds)} border={border} />
               <Fact label="Cada acerto" value={`+${exam.xp_per_correct} XP`} border={border} color={isDark ? colors.purple[400] : colors.purple[600]} />
-              {showEnergy ? (
+              {showEnergy && exam.attempts > 0 ? (
+                <Fact label="Refazer custa" value={`${exam.retake_energy} de energia`} border={border} color={familyTokens(isDark).brandSoftInk} />
+              ) : showEnergy ? (
                 <Fact label="Energia" value="+1 por acerto, +2 a cada 3" border={border} color={familyTokens(isDark).brandSoftInk} />
               ) : null}
               {exam.attempts > 0 ? (
