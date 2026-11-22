@@ -17,7 +17,6 @@ import {
 import { GuidedSummary, ReadingPanel, useGuidedReading } from '../../components/trail/GuidedSummary';
 import { ChoiceList, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
-import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { GameButton } from '../../components/ui/GameButton';
 import { EnergyPill } from '../../components/ui/EnergyPill';
 import { useConfetti } from '../../hooks/useConfetti';
@@ -129,9 +128,8 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
   const [correctCount, setCorrectCount] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [xpGained, setXpGained] = useState(0);
+  // A estrela ganha no desafio aparece na tela da conquista, no fim (PhaseEnd)
   const [levelUp, setLevelUp] = useState<DisciplineLevelUp | null>(null);
-  // A subida de estrela espera o "Continuar", para não cobrir o comentário da questão
-  const pendingLevelUp = useRef<DisciplineLevelUp | null>(null);
 
   const [summaryRead, setSummaryRead] = useState(false);
   const [summaryConfirmed, setSummaryConfirmed] = useState(false);
@@ -161,7 +159,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
   const applyStep = (response: CheckpointStepResponse) => {
     setXpGained((xp) => xp + response.xp_gained);
     updateFromApi({ xp: response.user.xp });
-    pendingLevelUp.current = response.discipline_level_up ?? pendingLevelUp.current;
+    if (response.discipline_level_up) setLevelUp(response.discipline_level_up);
   };
 
   const markProgress = (material: CheckpointMaterial, change: (made: { summary: boolean; answered: number[] }) => void) =>
@@ -216,10 +214,6 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
       onOutOfEnergy();
       return;
     }
-    if (pendingLevelUp.current) {
-      setLevelUp(pendingLevelUp.current);
-      pendingLevelUp.current = null;
-    }
     if (stepIndex < steps.length - 1) {
       setStepIndex(stepIndex + 1);
       setSummaryRead(false);
@@ -256,9 +250,9 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
           xp={xpGained}
           accuracy={accuracy}
           premium={hasInfiniteLives}
+          levelUp={levelUp}
           onDone={onExit}
         />
-        <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
         <ConfettiView />
       </SafeAreaView>
     );
@@ -393,7 +387,6 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
         </ResultBar>
       ) : null}
 
-      <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
       <ConfettiView />
     </SafeAreaView>
   );

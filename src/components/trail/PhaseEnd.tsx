@@ -10,7 +10,9 @@ import {
   View,
 } from 'react-native';
 import { FileCheck, Target, Zap } from 'lucide-react-native';
+import type { DisciplineLevelUp } from '../../api/play';
 import { GameButton } from '../ui/GameButton';
+import { StarBadge } from '../ui/StarBadge';
 import { useAppearance } from '../../hooks/useAppearance';
 import { useSubscriptionCheckout } from '../../hooks/useSubscriptionCheckout';
 import { colors, familyTokens } from '../../theme/colors';
@@ -20,8 +22,9 @@ import { BlueButton, Marked, YEARLY, YearlyPlan } from './PremiumPieces';
  * Fim de fase do mapa novo, igual ao web (components/beta-preview/PhaseEnd.vue).
  * - Passagem marca-texto: quatro riscos atravessam a tela na diagonal, um depois do outro, até
  *   cobri-la; por baixo a tela troca, e os riscos saem pelo outro lado. Mesmo tom do traço do
- *   título (brandMark). Vale ao abrir (folha lisa → resultado) e em "Continuar" (resultado →
- *   convite Premium, só para quem não assina). Quem assina, ou pula o convite, sai (onDone).
+ *   título (brandMark). Vale ao abrir (folha lisa → resultado) e em cada "Continuar": se a fase
+ *   deu uma estrela, resultado → conquista; depois → convite Premium, só para quem não assina.
+ *   Quem assina, ou pula o convite, sai (onDone).
  * - Com "reduzir movimento", troca direto.
  */
 
@@ -39,7 +42,7 @@ const EASE = Easing.bezier(0.65, 0, 0.35, 1);
 // Moldura das ilustrações: as duas bonecas aparecem do mesmo tamanho
 const HERO_MAX = 240;
 
-type Stage = 'blank' | 'complete' | 'invite';
+type Stage = 'blank' | 'complete' | 'achievement' | 'invite';
 
 export function PhaseEnd({
   title,
@@ -49,6 +52,7 @@ export function PhaseEnd({
   xp,
   accuracy,
   premium,
+  levelUp = null,
   onDone,
 }: {
   title: string;
@@ -58,6 +62,8 @@ export function PhaseEnd({
   xp: number;
   accuracy: number;
   premium: boolean;
+  // A estrela que a fase deu (chega com o fim da fase), se deu
+  levelUp?: DisciplineLevelUp | null;
   onDone: () => void;
 }) {
   const { isDark } = useAppearance();
@@ -85,10 +91,17 @@ export function PhaseEnd({
     run(1).start(() => {
       setStage(to);
       setSweep('out');
-      run(0).start(() => {
-        setSweep(null);
-        busy.current = false;
-      });
+      // A tela nova monta (e abre o GIF) neste instante; no Android isso come os primeiros
+      // quadros, e a saída parecia sumir de uma vez. Espera ela desenhar para os riscos saírem
+      // à vista, já com a origem trocada para a direita.
+      setTimeout(
+        () =>
+          run(0).start(() => {
+            setSweep(null);
+            busy.current = false;
+          }),
+        120,
+      );
     });
   }
 
@@ -98,6 +111,11 @@ export function PhaseEnd({
       highlightTo('complete');
     });
   }, []);
+
+  function afterAchievement() {
+    if (premium) onDone();
+    else highlightTo('invite');
+  }
 
   const background = isDark ? colors.dark.background : colors.background;
 
@@ -111,8 +129,10 @@ export function PhaseEnd({
           countLabel={countLabel}
           xp={xp}
           accuracy={accuracy}
-          onContinue={() => (premium ? onDone() : highlightTo('invite'))}
+          onContinue={() => (levelUp ? highlightTo('achievement') : afterAchievement())}
         />
+      ) : stage === 'achievement' && levelUp ? (
+        <AchievementScene levelUp={levelUp} reduceMotion={reduce.current} onContinue={afterAchievement} />
       ) : stage === 'invite' ? (
         <PremiumInvite reduceMotion={reduce.current} onSkip={onDone} />
       ) : null}
@@ -215,6 +235,43 @@ function Stat({ icon, value, label, color, muted }: { icon: React.ReactNode; val
   );
 }
 
+/* ===== Conquista ===== */
+
+/** A estrela nova da disciplina, numa tela própria (antes era uma sobreposição no resultado) */
+function AchievementScene({ levelUp, reduceMotion, onContinue }: { levelUp: DisciplineLevelUp; reduceMotion: boolean; onContinue: () => void }) {
+  const { isDark } = useAppearance();
+  const stars = levelUp.stars ?? levelUp.new_level;
+  const fg = isDark ? colors.dark.foreground : colors.foreground;
+  const muted = isDark ? colors.dark.mutedForeground : colors.mutedForeground;
+  const pop = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    Animated.spring(pop, { toValue: 1, delay: 250, friction: 6, tension: 90, useNativeDriver: true }).start();
+  }, []);
+
+  return (
+    <View style={styles.resultWrap}>
+      <View style={styles.resultHero}>
+        <Text style={[styles.kicker, { color: muted }]}>Parabéns!</Text>
+        <Animated.View style={{ marginTop: 16, opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
+          <StarBadge badgeUrl={levelUp.badge_url} name={levelUp.discipline_name} stars={stars} icon={levelUp.icon} color={levelUp.color} size={200} />
+        </Animated.View>
+        <View style={[styles.titleRow, { marginTop: 20 }]}>
+          <Text style={[styles.resultTitle, { color: fg }]}>Você ganhou </Text>
+          <Marked text={stars === 1 ? 'a primeira estrela!' : 'uma estrela!'} fontSize={28} color={fg} delay={750} />
+        </View>
+        <Text style={[styles.resultText, { color: muted }]}>
+          {stars} {stars === 1 ? 'estrela' : 'estrelas'} em {levelUp.discipline_name}
+        </Text>
+      </View>
+      <GameButton variant="main" size="lg" fullWidth onPress={onContinue}>
+        Continuar
+      </GameButton>
+    </View>
+  );
+}
+
 /* ===== Convite Premium ===== */
 
 function PremiumInvite({ reduceMotion, onSkip }: { reduceMotion: boolean; onSkip: () => void }) {
@@ -305,6 +362,7 @@ const styles = StyleSheet.create({
   titleRow: { marginTop: 16, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', flexWrap: 'wrap' },
   resultTitle: { fontSize: 28, fontWeight: '800', lineHeight: 28 * 1.2 },
   resultText: { marginTop: 8, fontSize: 16, textAlign: 'center' },
+  kicker: { fontSize: 14, fontWeight: '700' },
   stats: { flexDirection: 'row', borderWidth: 2, borderRadius: 16 },
   stat: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 },
   statDivider: { width: 2 },

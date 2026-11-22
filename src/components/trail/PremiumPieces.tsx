@@ -15,6 +15,10 @@ export const YEARLY = 'R$ 107,91';
 export const YEARLY_PER_MONTH = 'R$ 8,99';
 export const DISCOUNT = '-25%';
 
+// As vantagens, curtas e sem descrição. Iguais às do web (resources/js/lib/premium.ts), com
+// "Energia infinita" no lugar de "Energia e vidas infinitas" (o app só tem energia).
+export const PERKS = ['Energia infinita', 'Fantasias exclusivas', 'Sem anúncios', 'Todas as legislações', 'Garantia de 7 dias'];
+
 // Azul do Premium: o do mapa (blue-500), com a base no blue-700
 const BLUE = '#3b82f6';
 const BLUE_EDGE = '#1d4ed8';
@@ -55,6 +59,52 @@ export function BlueButton({ label, onPress }: { label: string; onPress: () => v
         </View>
       )}
     </Pressable>
+  );
+}
+
+/** As vantagens em etiquetas que entram uma depois da outra (como o PerkList.vue do web) */
+export function PerkList({ perks = PERKS, delay = 200 }: { perks?: string[]; delay?: number }) {
+  const { isDark } = useAppearance();
+  const t = familyTokens(isDark);
+  const fg = isDark ? colors.dark.foreground : colors.foreground;
+  const items = useRef(perks.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
+      if (reduce) {
+        items.forEach((v) => v.setValue(1));
+        return;
+      }
+      Animated.stagger(
+        90,
+        items.map((v) =>
+          Animated.timing(v, { toValue: 1, duration: 360, delay, easing: Easing.bezier(0.22, 1, 0.36, 1), useNativeDriver: true }),
+        ),
+      ).start();
+    });
+  }, []);
+
+  return (
+    <View style={styles.perks}>
+      {perks.map((perk, i) => (
+        <Animated.View
+          key={perk}
+          style={[
+            styles.perk,
+            {
+              backgroundColor: t.tint,
+              opacity: items[i],
+              transform: [
+                { translateY: items[i].interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
+                { scale: items[i].interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) },
+              ],
+            },
+          ]}
+        >
+          <Text style={[styles.perkText, { color: fg }]}>{perk}</Text>
+        </Animated.View>
+      ))}
+    </View>
   );
 }
 
@@ -103,6 +153,9 @@ export function Marked({ text, fontSize, color, delay, fadeIn = false }: { text:
 }
 
 const styles = StyleSheet.create({
+  perks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
+  perk: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  perkText: { fontSize: 14, fontWeight: '700' },
   planBase: { borderRadius: 16, paddingBottom: 4 },
   plan: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 16, borderWidth: 2 },
   planName: { fontSize: 16, fontWeight: '800' },

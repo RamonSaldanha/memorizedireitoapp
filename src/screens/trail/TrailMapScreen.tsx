@@ -261,7 +261,8 @@ export function TrailMapScreen() {
         <View style={styles.flex}>
           {/* Cartão da etapa: um só, parado no topo; o título muda conforme a etapa que passa por ele */}
           {section ? (
-            <View style={[styles.sectionCard, { width: trailWidth, backgroundColor: cardBg, borderColor: cardBorder, shadowColor: cardBorder }]}>
+            <View style={[styles.sectionBase, { width: trailWidth, backgroundColor: cardBorder }]}>
+            <View style={[styles.sectionCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
               <Text style={[styles.sectionLabel, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>Etapa {section.number}</Text>
               <Text numberOfLines={1} style={[styles.sectionTitle, { color: isDark ? '#fff' : colors.gray[900] }]}>
                 {section.legislation_title}
@@ -269,7 +270,7 @@ export function TrailMapScreen() {
               <View style={[styles.sectionTrack, { backgroundColor: isDark ? colors.gray[700] : colors.gray[200] }]}>
                 <View style={[styles.sectionFill, { width: `${(section.completed_steps / Math.max(1, section.total_steps)) * 100}%` }]} />
               </View>
-              <View style={[styles.cardEdge, { backgroundColor: cardBorder }]} />
+            </View>
             </View>
           ) : null}
 
@@ -651,9 +652,10 @@ function Popover({ top, onClose, children, padded = false }: { top: number; onCl
   return (
     <>
       <Pressable style={styles.popoverBackdrop} onPress={onClose} accessibilityLabel="Fechar" />
-      <View style={[styles.popover, { top, backgroundColor: isDark ? colors.gray[800] : '#fff', borderColor: border, padding: padded ? 20 : 12 }]}>
-        {children}
-        <View style={[styles.cardEdge, { backgroundColor: border }]} />
+      <View style={[styles.popoverBase, { top, backgroundColor: border }]}>
+        <View style={[styles.popover, { backgroundColor: isDark ? colors.gray[800] : '#fff', borderColor: border, padding: padded ? 20 : 12 }]}>
+          {children}
+        </View>
       </View>
     </>
   );
@@ -702,17 +704,10 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15, textAlign: 'center' },
   scrollContent: { alignItems: 'center', paddingTop: 12, paddingBottom: 32 },
 
-  sectionCard: {
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 4,
-    borderWidth: 2,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    zIndex: 20,
-  },
-  cardEdge: { position: 'absolute', left: 12, right: 12, bottom: -6, height: 4, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, zIndex: -1 },
+  // A base 3D é um bloco da cor do contorno atrás do cartão, da largura inteira e 4 px mais
+  // baixo (como o box-shadow 0 4px 0 do web e os botões da família)
+  sectionBase: { alignSelf: 'center', marginTop: 8, marginBottom: 4, borderRadius: 16, paddingBottom: 4, zIndex: 20 },
+  sectionCard: { borderWidth: 2, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 14 },
   sectionLabel: { fontSize: 14 },
   sectionTitle: { marginTop: 2, fontSize: 18, fontWeight: '800' },
   sectionTrack: { marginTop: 12, height: 8, borderRadius: 999, overflow: 'hidden' },
@@ -733,7 +728,8 @@ const styles = StyleSheet.create({
   },
 
   popoverBackdrop: { position: 'absolute', left: -1000, right: -1000, top: -5000, bottom: -5000, zIndex: 20 },
-  popover: { position: 'absolute', left: 0, right: 0, zIndex: 30, borderWidth: 2, borderRadius: 16 },
+  popoverBase: { position: 'absolute', left: 0, right: 0, zIndex: 30, borderRadius: 16, paddingBottom: 4 },
+  popover: { borderWidth: 2, borderRadius: 16 },
   popoverRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   popoverLabel: { flex: 1, fontSize: 14, fontWeight: '800' },
   popoverAction: { flexDirection: 'row', alignItems: 'center', gap: 6 },

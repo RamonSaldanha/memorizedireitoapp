@@ -18,7 +18,6 @@ import { apiErrorCode, trailApi, type EnergyCombo, type TrailChallengeResult } f
 import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
-import { LevelUpOverlay } from '../../components/game/LevelUpOverlay';
 import { ConfirmSheet, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
@@ -294,9 +293,9 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
           xp={xpGained}
           accuracy={accuracy}
           premium={hasInfiniteLives}
+          levelUp={levelUp}
           onDone={() => navigation.goBack()}
         />
-        <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
         <ConfettiView />
       </SafeAreaView>
     );
@@ -440,7 +439,6 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
           navigation.goBack();
         }}
       />
-      <LevelUpOverlay levelUp={levelUp} onDone={() => setLevelUp(null)} isDark={isDark} />
       <ConfettiView />
     </SafeAreaView>
   );

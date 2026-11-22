@@ -63,6 +63,12 @@ The map uses energy, like the web's beta (rules in the web's `EnergyService`, nu
 - Golden rule (kept by the web's `EnergyTest`): even getting everything right, the energy runs out.
 - `lives` stays on the server for the old site and old app builds; `/trail/fail` only exists for builds before energy.
 
+### Premium and end-of-phase screens
+Same pattern as the web's end-of-phase invite: solid background, a GIF in the same-size frame, the highlighted title and one main action.
+- [PremiumPieces](src/components/trail/PremiumPieces.tsx): the yearly card, the blue button, the highlighter word (`Marked`) and `PerkList` (the perks as chips, no icon or description, entering one by one). Prices and perks match the web's `resources/js/lib/premium.ts`.
+- [PhaseEnd](src/components/trail/PhaseEnd.tsx): result → (if the phase gave a star) achievement screen → (non-subscribers) Premium invite → map, always through the highlighter sweep. The star is no longer an overlay; phase and challenge pass `levelUp`. The sweep's exit waits ~120 ms after the new screen mounts, or Android drops its first frames and it looks like it vanishes at once.
+- [OfferStep](src/components/onboarding/OfferStep.tsx) (onboarding welcome offer) uses `presente.gif`, the highlighted "plano anual" and `PerkList`.
+
 ### Word bank
 Like the web: the bank keeps every word in its place, a used word leaves an empty slot ([WordChip / EmptyWordSlot](src/components/game/WordChip.tsx)) and the word in the gap has the same chip look; tapping it sends it back. [useGapSelections](src/hooks/useGapSelections.ts) remembers which bank button each gap came from. Pass `bank` to `PhaseControls` to get this layout (the map and the onboarding both do).
 
