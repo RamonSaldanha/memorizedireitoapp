@@ -22,11 +22,22 @@ export type EnergyCombo = { streak: number; gained: number };
 /** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */
 export type EnergySpend = { energy: EnergyState; combo: EnergyCombo | null; out_of_energy: boolean };
 
-/** Tela sem energia: a energia (com a hora do próximo +1) e quanto o anúncio dá. */
+/** O próximo anúncio da tela sem energia: o nosso (o vídeo do Premium) ou o do Google. */
+export type RewardAd = { kind: 'house' | 'google'; video_url: string | null; seconds: number };
+
+/**
+ * Tela sem energia: a energia (com a hora do próximo +1), quanto o anúncio dá, quantos ainda
+ * valem hoje (3 por dia) e qual vem agora. Servidores antigos não mandam `ads_left` nem `ad`.
+ */
 export type EnergyStatusResponse = {
   energy: EnergyState;
   ad_reward: number;
+  ads_left?: number;
+  ad?: RewardAd;
 };
+
+/** Anúncio assistido até o fim; depois do limite do dia, 429 com o código `ad_limit`. */
+export type RewardAdResponse = { success: boolean; gained: number; energy: EnergyState; ads_left: number; ad: RewardAd };
 
 /** Mínimo para abrir uma fase nova (config/energy.php no servidor). */
 export const PHASE_OPEN_ENERGY = 12;
@@ -271,5 +282,5 @@ export const trailApi = {
   finishExam: (key: string) => apiClient.post<ExamResult>(`/trail/exams/${key}/finish`),
 
   energy: () => apiClient.get<EnergyStatusResponse>('/trail/energy'),
-  rewardEnergy: () => apiClient.post<{ success: boolean; energy: EnergyState }>('/trail/energy/reward'),
+  rewardEnergy: () => apiClient.post<RewardAdResponse>('/trail/energy/reward'),
 };

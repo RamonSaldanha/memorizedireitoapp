@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { X } from 'lucide-react-native';
-import { PHASE_OPEN_ENERGY, trailApi } from '../../api/trail';
+import { PHASE_OPEN_ENERGY, trailApi, type RewardAdResponse } from '../../api/trail';
+import { RewardedAdOverlay } from '../../components/trail/RewardedAdOverlay';
 import { BlueButton, Marked, YEARLY, YEARLY_PER_MONTH, YearlyPlan } from '../../components/trail/PremiumPieces';
 import { EnergyPill } from '../../components/ui/EnergyPill';
 import { GameButton } from '../../components/ui/GameButton';
@@ -24,61 +24,11 @@ const TIRED = require('../../../assets/img/sem-energia.gif');
 const HERO_MAX = 240;
 const HERO_RATIO = 418 / 540;
 
-const ADSENSE_CLIENT_ID = 'ca-pub-2585274176504938';
-const ADSENSE_SLOT_ID = '3465272448';
-const COUNTDOWN_SECONDS = 30;
-
-const AD_HTML = `<!doctype html>
-<html lang="pt-br">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Anúncio</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; }
-  body { display: flex; flex-direction: column; align-items: center; padding: 16px; }
-  .ad-wrap { width: 100%; min-height: 300px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-  .info { font-size: 13px; color: #64748b; text-align: center; }
-</style>
-</head>
-<body>
-  <div class="ad-wrap">
-    <ins class="adsbygoogle"
-         style="display:block;width:100%;min-height:280px"
-         data-ad-client="${ADSENSE_CLIENT_ID}"
-         data-ad-slot="${ADSENSE_SLOT_ID}"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-  <div id="info" class="info">Aguarde <span id="counter">${COUNTDOWN_SECONDS}</span>s para pegar a energia…</div>
-
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}" crossorigin="anonymous"></script>
-  <script>
-    (adsbygoogle = window.adsbygoogle || []).push({});
-    var remaining = ${COUNTDOWN_SECONDS};
-    var counterEl = document.getElementById('counter');
-    var infoEl = document.getElementById('info');
-    var timer = setInterval(function () {
-      remaining -= 1;
-      if (remaining <= 0) {
-        clearInterval(timer);
-        infoEl.textContent = 'Pronto! Toque em Pegar a energia.';
-        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-          window.ReactNativeWebView.postMessage('ready');
-        }
-      } else {
-        counterEl.textContent = remaining;
-      }
-    }, 1000);
-  </script>
-</body>
-</html>`;
-
 /**
  * Sem energia, como a BetaPlay/NoEnergy.vue da web e no desenho do convite Premium do fim de
  * fase: o corredor cansado e a frase com marca-texto, quando volta o próximo +1, o anual
- * (energia infinita), o anúncio (+3) e esperar a recarga.
+ * (energia infinita), o anúncio (+3, até 3 por dia, em tela cheia: o nosso e o do Google se
+ * revezam, ver RewardedAdOverlay) e esperar a recarga.
  */
 export function NoEnergyScreen({ navigation }: Props) {
   const queryClient = useQueryClient();
@@ -110,27 +60,12 @@ export function NoEnergyScreen({ navigation }: Props) {
 
   const [room, setRoom] = useState(0);
   const [watching, setWatching] = useState(false);
-  const [adReady, setAdReady] = useState(false);
-  const [collecting, setCollecting] = useState(false);
 
-  const onAdMessage = (event: WebViewMessageEvent) => {
-    if (event.nativeEvent.data === 'ready') setAdReady(true);
-  };
-
-  const collect = async () => {
-    if (!adReady || collecting) return;
-    setCollecting(true);
-    try {
-      const res = await trailApi.rewardEnergy();
-      setEnergy(res.data.energy);
-      setWatching(false);
-      setAdReady(false);
-      await refetch();
-    } catch {
-      setToast({ title: 'Não foi possível pegar a energia. Tente de novo.', variant: 'error' });
-    } finally {
-      setCollecting(false);
-    }
+  // Depois do anúncio, a tela pega de novo a energia e o próximo anúncio
+  const adClosed = (result: RewardAdResponse | null) => {
+    setWatching(false);
+    if (result) setEnergy(result.energy);
+    refetch();
   };
 
   const backToMap = () => {
@@ -140,6 +75,8 @@ export function NoEnergyScreen({ navigation }: Props) {
 
   const energy = data?.energy ?? storeEnergy;
   const adReward = data?.ad_reward ?? 3;
+  const adsLeft = data?.ads_left ?? 3;
+  const ad = data?.ad ?? { kind: 'google' as const, video_url: null, seconds: 30 };
   const canPlay = energy.infinite || energy.value >= PHASE_OPEN_ENERGY;
   const minutes = energy.next_at ? Math.ceil((Date.parse(energy.next_at) - now) / 60_000) : null;
 
@@ -156,69 +93,55 @@ export function NoEnergyScreen({ navigation }: Props) {
         <EnergyPill energy={energy} pill />
       </View>
 
-      {watching ? (
-        <View style={styles.adContent}>
-          <Text style={[styles.adTitle, { color: fg }]}>Assistindo anúncio…</Text>
-          <View style={styles.webviewWrap}>
-            <WebView
-              originWhitelist={['*']}
-              source={{ html: AD_HTML, baseUrl: 'https://memorizedireito.com' }}
-              onMessage={onAdMessage}
-              javaScriptEnabled
-              domStorageEnabled
-              mixedContentMode="always"
-              style={styles.webview}
+      <View style={styles.wrap}>
+        <View style={styles.room} onLayout={(e: LayoutChangeEvent) => setRoom(e.nativeEvent.layout.height)}>
+          <View style={[styles.frame, { width: heroW, height: heroH }]}>
+            <Image
+              source={TIRED}
+              style={{ width: heroW, height: heroW * (627 / 418), marginTop: -heroW * 0.1794 }}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
             />
           </View>
-          <GameButton variant="main" size="lg" fullWidth disabled={!adReady || collecting} onPress={collect} style={{ marginTop: 16 }}>
-            {collecting ? <ActivityIndicator color={colors.family.brandInk} size="small" /> : `Pegar a energia (+${adReward})`}
-          </GameButton>
-          <GameButton variant="ghost" size="sm" fullWidth onPress={() => setWatching(false)} style={{ marginTop: 4 }}>
-            Cancelar
-          </GameButton>
-        </View>
-      ) : (
-        <View style={styles.wrap}>
-          <View style={styles.room} onLayout={(e: LayoutChangeEvent) => setRoom(e.nativeEvent.layout.height)}>
-            <View style={[styles.frame, { width: heroW, height: heroH }]}>
-              <Image
-                source={TIRED}
-                style={{ width: heroW, height: heroW * (627 / 418), marginTop: -heroW * 0.1794 }}
-                resizeMode="contain"
-                accessibilityIgnoresInvertColors
-              />
-            </View>
-            <View style={styles.titleRow}>
-              <Text style={[styles.title, { color: fg }]}>Sua energia </Text>
-              <Marked key={canPlay ? 'back' : 'out'} text={canPlay ? 'voltou!' : 'acabou.'} fontSize={22} color={fg} delay={300} />
-            </View>
-            <Text style={[styles.subtitle, { color: muted }]}>
-              {canPlay
-                ? 'Já dá para abrir uma fase nova.'
-                : `Ela volta sozinha, 1 por hora${minutes !== null ? ` (a próxima em ${minutes > 0 ? `${minutes} min` : 'instantes'})` : ''}.`}
-            </Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: fg }]}>Sua energia </Text>
+            <Marked key={canPlay ? 'back' : 'out'} text={canPlay ? 'voltou!' : 'acabou.'} fontSize={22} color={fg} delay={300} />
           </View>
+          <Text style={[styles.subtitle, { color: muted }]}>
+            {canPlay
+              ? 'Já dá para abrir uma fase nova.'
+              : `Ela volta sozinha, 1 por hora${minutes !== null ? ` (a próxima em ${minutes > 0 ? `${minutes} min` : 'instantes'})` : ''}.`}
+          </Text>
+        </View>
 
-          {canPlay ? (
-            <GameButton variant="main" size="lg" fullWidth onPress={backToMap} style={{ marginTop: 16 }}>
-              Voltar ao mapa
-            </GameButton>
-          ) : (
-            <>
-              <View style={{ marginTop: 16 }}>
-                <YearlyPlan line={`Energia infinita · ${YEARLY_PER_MONTH} por mês`} />
-              </View>
-              <BlueButton label={`Assinar por ${YEARLY}/ano`} onPress={openSubscription} />
+        {canPlay ? (
+          <GameButton variant="main" size="lg" fullWidth onPress={backToMap} style={{ marginTop: 16 }}>
+            Voltar ao mapa
+          </GameButton>
+        ) : (
+          <>
+            <View style={{ marginTop: 16 }}>
+              <YearlyPlan line={`Energia infinita · ${YEARLY_PER_MONTH} por mês`} />
+            </View>
+            <BlueButton label={`Assinar por ${YEARLY}/ano`} onPress={openSubscription} />
+            {adsLeft > 0 ? (
               <GameButton variant="second" size="lg" fullWidth onPress={() => setWatching(true)} style={{ marginTop: 12 }}>
                 {`Assistir anúncio (+${adReward})`}
               </GameButton>
-              <GameButton variant="ghost" size="sm" fullWidth onPress={backToMap} style={{ marginTop: 4 }}>
-                Esperar a recarga
-              </GameButton>
-            </>
-          )}
-        </View>
-      )}
+            ) : null}
+            <Text style={[styles.adsLeft, { color: muted }]}>
+              {adsLeft > 0
+                ? `${adsLeft === 1 ? 'Resta 1 anúncio' : `Restam ${adsLeft} anúncios`} hoje`
+                : 'Os anúncios de hoje acabaram. Volte amanhã.'}
+            </Text>
+            <GameButton variant="ghost" size="sm" fullWidth onPress={backToMap} style={{ marginTop: 4 }}>
+              Esperar a recarga
+            </GameButton>
+          </>
+        )}
+      </View>
+
+      {watching ? <RewardedAdOverlay ad={ad} onClose={adClosed} /> : null}
 
       {isSyncing ? (
         <View style={styles.syncOverlay}>
@@ -243,10 +166,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', flexWrap: 'wrap' },
   title: { fontSize: 22, fontWeight: '800', lineHeight: 22 * 1.2 },
   subtitle: { marginTop: 4, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  adContent: { flex: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
-  adTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
-  webviewWrap: { flex: 1, borderRadius: 14, overflow: 'hidden', backgroundColor: '#fff' },
-  webview: { flex: 1, backgroundColor: 'transparent' },
+  adsLeft: { marginTop: 8, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   syncOverlay: {
     position: 'absolute',
     top: 0,
