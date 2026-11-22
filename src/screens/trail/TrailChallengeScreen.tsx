@@ -7,6 +7,7 @@ import type { DisciplineLevelUp } from '../../api/play';
 import {
   apiErrorCode,
   boardLabel,
+  comboReward,
   trailApi,
   type CheckpointAnswerResponse,
   type CheckpointMaterial,
@@ -201,6 +202,8 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
       setAnsweredCount((n) => n + 1);
       if (response.is_correct) setCorrectCount((n) => n + 1);
       applyStep(response);
+      // O combo de quem assina rende XP na hora
+      if (response.combo?.xp) setXpGained((xp) => xp + (response.combo?.xp ?? 0));
       setFeedback(response);
       if (response.energy && response.combo && response.combo.gained > 0) {
         comboEnergy.current = response.energy;
@@ -375,7 +378,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
         <ResultBar correct={feedback.is_correct} buttonLabel={outOfEnergy ? 'Sair' : undefined} onContinue={advance}>
           {feedback.combo ? (
             <ResultText correct={feedback.is_correct} bold>
-              Sequência de {feedback.combo.streak}!{feedback.combo.gained > 0 ? ` +${feedback.combo.gained} de energia` : ''}
+              Sequência de {feedback.combo.streak}!{comboReward(feedback.combo)}
             </ResultText>
           ) : null}
           {outOfEnergy ? (

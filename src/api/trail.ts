@@ -16,8 +16,18 @@ export type EnergyState = {
   infinite: boolean;
 };
 
-/** Combo: a sequência de acertos fechou um múltiplo e devolveu energia. */
-export type EnergyCombo = { streak: number; gained: number };
+/**
+ * Combo: a sequência de acertos fechou um múltiplo. Devolve energia (`gained`) a quem não
+ * assina; quem assina ganha XP (`xp`): na fase ele entra no fim, junto com o XP da fase; no
+ * desafio, na hora. `xp` falta em servidores anteriores a isso.
+ */
+export type EnergyCombo = { streak: number; gained: number; xp?: number };
+
+/** O que o combo rendeu, para o texto da barra de resultado (" +5 XP", " +1 de energia" ou nada). */
+export function comboReward(combo: EnergyCombo): string {
+  if ((combo.xp ?? 0) > 0) return ` +${combo.xp} XP`;
+  return combo.gained > 0 ? ` +${combo.gained} de energia` : '';
+}
 
 /** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */
 export type EnergySpend = { energy: EnergyState; combo: EnergyCombo | null; out_of_energy: boolean };

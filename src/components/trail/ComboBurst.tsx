@@ -11,7 +11,8 @@ import { familyTokens } from '../../theme/colors';
  * A festa do combo (acertos seguidos na fase e no desafio): a tela pisca, raios cruzam a tela,
  * "COMBO x3" salta no meio com a energia ganha e um raiozinho voa até a bateria do topo; quando
  * ele chega, `onArrive` (a tela credita a energia, e a pílula pula). Cresce com a sequência:
- * x3 amarelo, x6 laranja ("Pegando fogo!"), x9 laranja forte ("Imparável!"). Igual ao web
+ * x3 amarelo, x6 laranja ("Pegando fogo!"), x9 laranja forte ("Imparável!"). Quem assina não
+ * ganha energia: o combo mostra "+5 XP" e não há raiozinho voando. Igual ao web
  * (components/beta-play/ComboBurst.vue). Com "reduzir movimento", só credita.
  */
 
@@ -118,11 +119,13 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
         Animated.spring(pop, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
       ]).start(() => {
         if (!alive) return;
+        // XP de quem assina: não há bateria para onde voar
+        const xp = (combo.xp ?? 0) > 0;
         Animated.sequence([
-          Animated.delay(450),
+          Animated.delay(xp ? 700 : 450),
           Animated.parallel([
             Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-            Animated.timing(fly, { toValue: 1, duration: 620, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true }),
+            ...(xp ? [] : [Animated.timing(fly, { toValue: 1, duration: 620, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true })]),
           ]),
         ]).start(({ finished }) => {
           if (!alive) return;
@@ -215,7 +218,12 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
           >
             {run.tier.kick ? <Text style={[styles.kick, { color: run.tier.e }]}>{run.tier.kick}</Text> : null}
             <OutlinedWord text={`COMBO x${run.combo.streak}`} size={run.combo.streak >= 9 ? 48 : 44} c={run.tier.c} e={run.tier.e} />
-            {run.combo.gained > 0 ? (
+            {(run.combo.xp ?? 0) > 0 ? (
+              <View style={[styles.gain, { backgroundColor: t.brandSoft }]}>
+                <Zap size={18} color={t.brandSoftInk} fill={t.brandSoftInk} />
+                <Text style={[styles.gainText, { color: t.brandSoftInk }]}>+{run.combo.xp} XP</Text>
+              </View>
+            ) : run.combo.gained > 0 ? (
               <View style={[styles.gain, { backgroundColor: t.brandSoft }]}>
                 <BatteryCharging size={18} color={t.brandSoftInk} />
                 <Text style={[styles.gainText, { color: t.brandSoftInk }]}>+{run.combo.gained} de energia</Text>

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { playApi, requiredCorrect, type ActiveSegment, type CompletedSegment, type DisciplineLevelUp, type SegmentAnswer } from '../../api/play';
-import { apiErrorCode, trailApi, type EnergyCombo, type EnergyState, type TrailChallengeResult } from '../../api/trail';
+import { apiErrorCode, comboReward, trailApi, type EnergyCombo, type EnergyState, type TrailChallengeResult } from '../../api/trail';
 import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
@@ -405,7 +405,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
         >
           {combo ? (
             <ResultText correct={lastResult.passed} bold>
-              Sequência de {combo.streak}!{combo.gained > 0 ? ` +${combo.gained} de energia` : ''}
+              Sequência de {combo.streak}!{comboReward(combo)}
             </ResultText>
           ) : null}
           {outOfEnergy ? (
