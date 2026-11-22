@@ -22,10 +22,9 @@ export type EnergyCombo = { streak: number; gained: number };
 /** Resposta de cada bloco verificado na fase (e de cada questão nova do desafio). */
 export type EnergySpend = { energy: EnergyState; combo: EnergyCombo | null; out_of_energy: boolean };
 
-/** Tela sem energia: a energia, a revisão sugerida (fase concluída mais esquecida) e o anúncio. */
+/** Tela sem energia: a energia (com a hora do próximo +1) e quanto o anúncio dá. */
 export type EnergyStatusResponse = {
   energy: EnergyState;
-  review: { id: number; legislation_title: string } | null;
   ad_reward: number;
 };
 
