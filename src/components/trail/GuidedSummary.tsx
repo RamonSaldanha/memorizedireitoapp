@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameButton } from '../ui/GameButton';
-import { Pressable, StyleSheet, Text, View, type TextLayoutEventData, type NativeSyntheticEvent } from 'react-native';
+import { Animated, PanResponder, StyleSheet, Text, View, type TextLayoutEventData, type NativeSyntheticEvent } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Minus, Pause, Play, Plus, Rows3, WholeWord } from 'lucide-react-native';
+import { GripHorizontal, Minus, Pause, Play, Plus, Rows3, WholeWord } from 'lucide-react-native';
 import type { SummaryBlock, SummaryInline } from '../../api/trail';
 import { colors } from '../../theme/colors';
 import { useAppearance } from '../../hooks/useAppearance';
@@ -26,6 +26,9 @@ const REQUIRED_COVERAGE = 0.9;
 // Mesmas chaves da web, cada uma no seu armazenamento
 const WPM_KEY = 'memorize:reading-wpm';
 const MODE_KEY = 'memorize:reading-mode';
+const PANEL_KEY = 'memorize:reading-panel';
+// Folga entre o painel e a borda da área
+const PANEL_MARGIN = 4;
 
 type Mode = 'chunk' | 'line';
 type State = 'idle' | 'playing' | 'paused';
@@ -271,8 +274,12 @@ export function useGuidedReading(
     setState('playing');
   }, [state, index, total]);
 
+  // Quando começou o toque atual no texto: soltar depois de segurar (para pausar) não é um
+  // toque na palavra, como na web (GuidedReading.vue, HOLD_MIN)
+  const touchStartedAt = useRef(0);
   const jumpTo = useCallback(
     (wordIndex: number) => {
+      if (Date.now() - touchStartedAt.current >= 300) return;
       setIndex(wordIndex);
       setState((current) => (current === 'idle' ? 'paused' : current));
     },
@@ -311,6 +318,7 @@ export function useGuidedReading(
     litTo,
     held,
     setHeld,
+    touchStartedAt,
     toggle,
     jumpTo,
     setWpm,
@@ -447,7 +455,10 @@ export function GuidedSummary({ reading }: { reading: GuidedReading }) {
     <View
       ref={reading.containerRef}
       // Segurar o texto prende o realce; soltar continua
-      onTouchStart={() => reading.state === 'playing' && reading.setHeld(true)}
+      onTouchStart={() => {
+        reading.touchStartedAt.current = Date.now();
+        if (reading.state === 'playing') reading.setHeld(true);
+      }}
       onTouchEnd={() => reading.setHeld(false)}
       onTouchCancel={() => reading.setHeld(false)}
       style={styles.summary}
@@ -459,47 +470,140 @@ export function GuidedSummary({ reading }: { reading: GuidedReading }) {
 
 /* ===== Painel ===== */
 
-/** Os controles da leitura, flutuando sobre o texto, perto do dedão. */
+/**
+ * Os controles da leitura, como o painel da web (GuidedReading.vue): flutuam sobre o texto, sem
+ * tirar largura dele, e a pessoa arrasta para perto do dedão. A posição fica guardada. Tocar
+ * aciona o botão; arrastar mais que um pouquinho move o painel.
+ */
 export function ReadingPanel({ reading }: { reading: GuidedReading }) {
   const { isDark } = useAppearance();
   const fg = isDark ? colors.gray[100] : colors.gray[800];
   const bg = isDark ? colors.gray[800] : '#ffffff';
   const edge = isDark ? colors.gray[700] : colors.gray[200];
 
+  // Área por onde o painel pode andar (a da rolagem) e o tamanho dele
+  const area = useRef({ w: 0, h: 0 });
+  const size = useRef({ w: 0, h: 0 });
+  const position = useRef<{ x: number; y: number } | null>(null);
+  const saved = useRef<{ x: number; y: number } | null | undefined>(undefined);
+  const pos = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [placed, setPlaced] = useState(false);
+
+  const clamp = (x: number, y: number) => ({
+    x: Math.min(Math.max(PANEL_MARGIN, x), Math.max(PANEL_MARGIN, area.current.w - size.current.w - PANEL_MARGIN)),
+    y: Math.min(Math.max(PANEL_MARGIN, y), Math.max(PANEL_MARGIN, area.current.h - size.current.h - PANEL_MARGIN)),
+  });
+
+  const moveTo = (x: number, y: number) => {
+    position.current = clamp(x, y);
+    pos.setValue(position.current);
+  };
+
+  // Põe o painel no lugar guardado (ou à direita, no meio) quando já se sabe o tamanho de tudo
+  const place = () => {
+    if (!area.current.w || !size.current.w || saved.current === undefined) return;
+    if (position.current) {
+      moveTo(position.current.x, position.current.y);
+      return;
+    }
+    const start = saved.current ?? { x: area.current.w, y: area.current.h * 0.5 - size.current.h / 2 };
+    moveTo(start.x, start.y);
+    setPlaced(true);
+  };
+
+  useEffect(() => {
+    AsyncStorage.getItem(PANEL_KEY)
+      .then((raw) => {
+        const value = raw ? JSON.parse(raw) : null;
+        saved.current = value && Number.isFinite(value.x) && Number.isFinite(value.y) ? value : null;
+      })
+      .catch(() => {
+        saved.current = null;
+      })
+      .finally(place);
+  }, []);
+
+  const dragStart = useRef({ x: 0, y: 0 });
+  const pan = useRef(
+    PanResponder.create({
+      // Toque curto fica com o botão; arrastar move o painel
+      onMoveShouldSetPanResponderCapture: (_e, g) => Math.hypot(g.dx, g.dy) > 6,
+      onPanResponderGrant: () => {
+        dragStart.current = position.current ?? { x: 0, y: 0 };
+      },
+      onPanResponderMove: (_e, g) => moveTo(dragStart.current.x + g.dx, dragStart.current.y + g.dy),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: () => {
+        if (position.current) AsyncStorage.setItem(PANEL_KEY, JSON.stringify(position.current)).catch(() => {});
+      },
+    }),
+  ).current;
+
   return (
-    <View style={[styles.panel, { backgroundColor: bg, borderColor: edge }]}>
-      <GameButton
-        variant="main"
-        size="sm"
-        square
-        onPress={reading.toggle}
-        containerStyle={{ marginBottom: 4 }}
-        accessibilityLabel={reading.state === 'playing' ? 'Pausar a leitura' : 'Iniciar a leitura'}
+    <View
+      pointerEvents="box-none"
+      style={StyleSheet.absoluteFill}
+      onLayout={(e) => {
+        area.current = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height };
+        place();
+      }}
+    >
+      <Animated.View
+        {...pan.panHandlers}
+        onLayout={(e) => {
+          size.current = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height };
+          place();
+        }}
+        style={[styles.panel, { backgroundColor: bg, borderColor: edge, opacity: placed ? 1 : 0, transform: pos.getTranslateTransform() }]}
       >
-        {reading.state === 'playing' ? (
-          <Pause size={20} color={colors.family.brandInk} fill={colors.family.brandInk} />
-        ) : (
-          <Play size={20} color={colors.family.brandInk} fill={colors.family.brandInk} />
-        )}
-      </GameButton>
-      <GameButton variant="ghost" size="sm" square onPress={() => reading.setWpm(reading.wpm + WPM_STEP)} accessibilityLabel="Mais rápido">
-        <Plus size={20} color={fg} />
-      </GameButton>
-      <Text style={[styles.wpm, { color: fg }]}>{reading.wpm}</Text>
-      <Text style={[styles.wpmLabel, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>pal/min</Text>
-      <GameButton variant="ghost" size="sm" square onPress={() => reading.setWpm(reading.wpm - WPM_STEP)} accessibilityLabel="Mais devagar">
-        <Minus size={20} color={fg} />
-      </GameButton>
-      <View style={[styles.panelDivider, { backgroundColor: edge }]} />
-      <GameButton
-        variant="ghost"
-        size="sm"
-        square
-        onPress={() => reading.setMode(reading.mode === 'chunk' ? 'line' : 'chunk')}
-        accessibilityLabel={reading.mode === 'chunk' ? 'Trocar para régua de leitura' : 'Trocar para leitura por blocos'}
-      >
-        {reading.mode === 'chunk' ? <WholeWord size={20} color={fg} /> : <Rows3 size={20} color={fg} />}
-      </GameButton>
+        <GripHorizontal size={14} color={colors.gray[400]} />
+        <GameButton
+          variant="main"
+          size="sm"
+          square
+          onPress={reading.toggle}
+          containerStyle={{ marginBottom: 4 }}
+          accessibilityLabel={reading.state === 'playing' ? 'Pausar a leitura' : 'Iniciar a leitura'}
+        >
+          {reading.state === 'playing' ? (
+            <Pause size={16} color={colors.family.brandInk} fill={colors.family.brandInk} />
+          ) : (
+            <Play size={16} color={colors.family.brandInk} fill={colors.family.brandInk} />
+          )}
+        </GameButton>
+        <GameButton
+          variant="tonal"
+          size="sm"
+          square
+          disabled={reading.wpm >= WPM_MAX}
+          onPress={() => reading.setWpm(reading.wpm + WPM_STEP)}
+          accessibilityLabel="Mais rápido"
+        >
+          <Plus size={16} color={fg} />
+        </GameButton>
+        <Text style={[styles.wpm, { color: fg }]}>{reading.wpm}</Text>
+        <Text style={[styles.wpmLabel, { color: isDark ? colors.gray[400] : colors.gray[500] }]}>ppm</Text>
+        <GameButton
+          variant="tonal"
+          size="sm"
+          square
+          disabled={reading.wpm <= WPM_MIN}
+          onPress={() => reading.setWpm(reading.wpm - WPM_STEP)}
+          accessibilityLabel="Mais devagar"
+        >
+          <Minus size={16} color={fg} />
+        </GameButton>
+        <View style={[styles.panelDivider, { backgroundColor: edge }]} />
+        <GameButton
+          variant="tonal"
+          size="sm"
+          square
+          onPress={() => reading.setMode(reading.mode === 'chunk' ? 'line' : 'chunk')}
+          accessibilityLabel={reading.mode === 'chunk' ? 'Trocar para régua de leitura' : 'Trocar para leitura por blocos'}
+        >
+          {reading.mode === 'chunk' ? <WholeWord size={16} color={fg} /> : <Rows3 size={16} color={fg} />}
+        </GameButton>
+      </Animated.View>
     </View>
   );
 }
@@ -524,18 +628,18 @@ const styles = StyleSheet.create({
   tableCell: { flex: 1, padding: 8 },
   rule: { height: 2, borderRadius: 1, marginVertical: 4 },
 
+  // Do tamanho do painel da web: botões de 40, recuo de 4 e canto de 12
   panel: {
     position: 'absolute',
-    right: 12,
-    bottom: 24,
+    left: 0,
+    top: 0,
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    borderRadius: 12,
+    padding: 4,
     gap: 4,
   },
-  wpm: { fontSize: 15, fontWeight: '800' },
-  wpmLabel: { fontSize: 10, fontWeight: '600' },
+  wpm: { fontSize: 12, fontWeight: '800' },
+  wpmLabel: { fontSize: 9, fontWeight: '600' },
   panelDivider: { height: 2, width: 28, borderRadius: 1, marginVertical: 2 },
 });

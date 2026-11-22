@@ -27,6 +27,8 @@ type Props = {
   children: React.ReactNode;
   state?: ChoiceState;
   onPress?: () => void;
+  /** Apertar e segurar (riscar a alternativa, por exemplo). Com ele, soltar depois não conta como toque. */
+  onLongPress?: () => void;
   disabled?: boolean;
   radius?: number;
   /** Estilo da face (recuo, direção, alinhamento). */
@@ -44,7 +46,7 @@ type Props = {
  * estado. Sem onPress, é só o desenho (a alternativa corrigida, por exemplo).
  */
 export function ChoiceCard({
-  children, state = 'open', onPress, disabled, radius = 16, style, containerStyle,
+  children, state = 'open', onPress, onLongPress, disabled, radius = 16, style, containerStyle,
   accessibilityRole = 'button', accessibilityState, accessibilityLabel,
 }: Props) {
   const { isDark } = useAppearance();
@@ -64,6 +66,8 @@ export function ChoiceCard({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={450}
       onPressIn={interactive ? pressIn : undefined}
       onPressOut={interactive ? pressOut : undefined}
       disabled={!onPress || disabled}

@@ -444,8 +444,11 @@ function Exam({
         {question.type === 'true_false' ? <Text style={[styles.instruction, { color: muted }]}>Julgue o item a seguir.</Text> : null}
         <Text style={[styles.statement, { color: isDark ? colors.gray[100] : colors.gray[900] }]}>{question.statement}</Text>
         <View style={{ marginTop: 20 }}>
-          <ChoiceList question={question} selected={selected} onSelect={(key) => setSelected(key || null)} feedback={feedback} />
+          <ChoiceList question={question} selected={selected} onSelect={(key) => setSelected(key || null)} feedback={feedback} strikable />
         </View>
+        {!feedback ? (
+          <Text style={[styles.tip, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>Arraste uma alternativa para o lado, ou segure, para riscá-la.</Text>
+        ) : null}
       </ScrollView>
 
       {!feedback ? (
@@ -531,6 +534,7 @@ const styles = StyleSheet.create({
   board: { fontSize: 12, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
   instruction: { marginTop: 16, fontSize: 14 },
   statement: { marginTop: 12, fontSize: 16, lineHeight: 25 },
+  tip: { marginTop: 12, fontSize: 12 },
   footer: { borderTopWidth: 2, paddingHorizontal: 16, paddingTop: 16 },
   error: { marginBottom: 12, fontSize: 14, color: colors.red[600], textAlign: 'center' },
 

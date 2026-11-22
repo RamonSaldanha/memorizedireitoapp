@@ -300,7 +300,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
         <ScrollView
           ref={scrollRef}
           style={styles.flex}
-          contentContainerStyle={[styles.content, step.kind === 'summary' && { paddingRight: 72 }]}
+          contentContainerStyle={styles.content}
           onLayout={(e) => {
             viewport.current = e.nativeEvent.layout.height;
           }}
@@ -355,7 +355,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
                 />
               </View>
               {!feedback ? (
-                <Text style={[styles.tip, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>Arraste uma alternativa para a direita para riscá-la.</Text>
+                <Text style={[styles.tip, { color: isDark ? colors.gray[500] : colors.gray[400] }]}>Arraste uma alternativa para o lado, ou segure, para riscá-la.</Text>
               ) : (
                 // Comentário do gabarito; o aviso de acerto ou erro fica na barra de baixo
                 <View style={[styles.comment, { borderColor: isDark ? colors.gray[700] : colors.gray[200] }]}>

@@ -144,6 +144,14 @@ export function ComboBurst({
   arrive.current = onArrive;
   const spark = useRef(onSpark);
   spark.current = onSpark;
+  const runToken = useRef(0);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
 
   const flash = useRef(new Animated.Value(0)).current;
   const draw = useRef(new Animated.Value(0)).current;
@@ -170,12 +178,16 @@ export function ComboBurst({
       });
     });
 
+  // Cada combo é uma corrida própria. Ela termina mesmo que a tela já tenha seguido para a próxima
+  // questão (o combo volta a null): só um combo novo ou sair da tela a interrompe. Antes, seguir
+  // no meio da animação a cancelava sem tirar "COMBO x3" da tela, e ele ficava parado ali.
   useEffect(() => {
     if (!combo) return;
-    let alive = true;
+    const id = ++runToken.current;
+    const isAlive = () => mounted.current && runToken.current === id;
     const xp = (combo.xp ?? 0) > 0;
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-      if (!alive) return;
+      if (!isAlive()) return;
       if (reduce || !size.w) {
         arrive.current?.();
         return;
@@ -194,7 +206,7 @@ export function ComboBurst({
       setRun({ id: Date.now(), combo, tier, xp, bolts, sparks });
 
       const finish = () => {
-        if (!alive) return;
+        if (!isAlive()) return;
         arrive.current?.();
         setRun(null);
         setSparkTo(null);
@@ -210,7 +222,7 @@ export function ComboBurst({
         Animated.timing(burst, { toValue: 1, duration: 900, easing: Easing.bezier(0.2, 0.8, 0.3, 1), useNativeDriver: true }),
         Animated.spring(pop, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
       ]).start(() => {
-        if (!alive) return;
+        if (!isAlive()) return;
         if (!xp) {
           Animated.sequence([
             Animated.delay(450),
@@ -218,21 +230,21 @@ export function ComboBurst({
               Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }),
               Animated.timing(fly, { toValue: 1, duration: 620, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true }),
             ]),
-          ]).start(({ finished }) => (finished ? finish() : alive && setRun(null)));
+          ]).start(finish);
           return;
         }
 
         // Quem assina: o "+5 XP" some e as faíscas descem uma a uma até a barra de resultado
         setTimeout(async () => {
-          if (!alive) return;
+          if (!isAlive()) return;
           const to = await measureTarget();
-          if (!alive) return;
+          if (!isAlive()) return;
           setSparkTo(to);
           Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }).start();
           let landed = 0;
           xpFly.forEach((v, i) =>
             Animated.timing(v, { toValue: 1, duration: 520, delay: i * 90, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true }).start(() => {
-              if (!alive) return;
+              if (!isAlive()) return;
               spark.current?.();
               landed++;
               if (landed === XP_SPARKS) setTimeout(finish, 250);
@@ -241,9 +253,6 @@ export function ComboBurst({
         }, 650);
       });
     });
-    return () => {
-      alive = false;
-    };
   }, [combo]);
 
   // Para onde o raiozinho da energia vai (a bateria do topo, à direita da barra de progresso: TrailTopBar)

@@ -142,12 +142,16 @@ export function choicesOf(question: StudyQuestion): { key: string; text: string 
     : Object.entries(question.options ?? {}).map(([key, text]) => ({ key, text }));
 }
 
-const STRIKE_DISTANCE = 48;
+// Distância que arma o risco (a alternativa já aparece riscada antes de soltar)
+const STRIKE_DISTANCE = 40;
+// Até onde o cartão acompanha o dedo; depois disso, resiste
+const FOLLOW_MAX = 72;
 
 /**
- * As alternativas da questão. Tocar marca; arrastar para a direita risca (ou desrisca) a
- * alternativa, para eliminar opções como se faz na prova (`strikable`). Depois da resposta, a
- * certa fica verde e a marcada errada, vermelha.
+ * As alternativas da questão. Tocar marca; arrastar para o lado (qualquer um) ou segurar risca
+ * (ou desrisca) a alternativa, para eliminar opções como se faz na prova (`strikable`). Igual
+ * ao site (composables/useStrikeChoices.ts). Depois da resposta, a certa fica verde e a marcada
+ * errada, vermelha.
  */
 export function ChoiceList({
   question,
@@ -191,7 +195,7 @@ export function ChoiceList({
             setStruck((prev) => ({ ...prev, [choice.key]: false }));
           }}
           onStrike={
-            strikable
+            strikable && !feedback
               ? () => {
                   setStruck((prev) => ({ ...prev, [choice.key]: !prev[choice.key] }));
                   if (!struck[choice.key] && selected === choice.key) onSelect('');
@@ -229,19 +233,43 @@ function Choice({
   const dx = useRef(new Animated.Value(0)).current;
   const onStrikeRef = useRef(onStrike);
   onStrikeRef.current = onStrike;
+  // Passou do limite: já mostra como a alternativa vai ficar ao soltar
+  const [armed, setArmed] = useState(false);
+  const armedRef = useRef(false);
+  const arm = (value: boolean) => {
+    if (armedRef.current === value) return;
+    armedRef.current = value;
+    setArmed(value);
+  };
+
+  const settle = () => {
+    arm(false);
+    Animated.spring(dx, { toValue: 0, friction: 7, tension: 140, useNativeDriver: true }).start();
+  };
 
   const pan = useRef(
     PanResponder.create({
       // Só arrasto para o lado: o vertical continua rolando a tela
-      onMoveShouldSetPanResponder: (_e, g) => !!onStrikeRef.current && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
-      onPanResponderMove: (_e, g) => dx.setValue(Math.max(0, Math.min(g.dx, STRIKE_DISTANCE + 24))),
-      onPanResponderRelease: (_e, g) => {
-        if (g.dx >= STRIKE_DISTANCE) onStrikeRef.current?.();
-        Animated.timing(dx, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      onMoveShouldSetPanResponder: (_e, g) => !!onStrikeRef.current && Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponderCapture: (_e, g) => !!onStrikeRef.current && Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+      // Começou a riscar: a rolagem não toma o gesto no meio
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderMove: (_e, g) => {
+        const distance = Math.abs(g.dx);
+        const shown = distance <= FOLLOW_MAX ? distance : FOLLOW_MAX + (distance - FOLLOW_MAX) * 0.25;
+        dx.setValue(Math.sign(g.dx) * shown);
+        arm(distance >= STRIKE_DISTANCE);
       },
-      onPanResponderTerminate: () => Animated.timing(dx, { toValue: 0, duration: 200, useNativeDriver: true }).start(),
+      onPanResponderRelease: () => {
+        if (armedRef.current) onStrikeRef.current?.();
+        settle();
+      },
+      onPanResponderTerminate: settle,
     }),
   ).current;
+
+  const looksStruck = armed ? !struck : struck;
 
   const cardState: ChoiceState =
     state === 'open' ? (selected ? 'selected' : 'open') : state === 'other' ? 'dim' : state;
@@ -252,16 +280,17 @@ function Choice({
       <ChoiceCard
         state={cardState}
         onPress={onPress}
+        onLongPress={onStrike}
         disabled={disabled}
         accessibilityState={{ selected, disabled }}
         style={styles.choice}
       >
         {multiple ? (
-          <View style={struck ? styles.struckKey : undefined}>
+          <View style={looksStruck ? styles.struckKey : undefined}>
             <ChoiceKey state={cardState}>{choiceKey}</ChoiceKey>
           </View>
         ) : null}
-        <Text style={[styles.choiceText, { color: textColor }, !multiple && { fontWeight: '700' }, struck && styles.struck]}>{text}</Text>
+        <Text style={[styles.choiceText, { color: textColor }, !multiple && { fontWeight: '700' }, looksStruck && styles.struck]}>{text}</Text>
       </ChoiceCard>
     </Animated.View>
   );
