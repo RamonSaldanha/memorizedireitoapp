@@ -78,7 +78,7 @@ const AD_HTML = `<!doctype html>
 /**
  * Sem energia, como a BetaPlay/NoEnergy.vue da web e no desenho do convite Premium do fim de
  * fase: o corredor cansado e a frase com marca-texto, quando volta o próximo +1, o anual
- * (energia infinita), o anúncio (+5) e esperar a recarga.
+ * (energia infinita), o anúncio (+3) e esperar a recarga.
  */
 export function NoEnergyScreen({ navigation }: Props) {
   const queryClient = useQueryClient();
@@ -139,7 +139,7 @@ export function NoEnergyScreen({ navigation }: Props) {
   };
 
   const energy = data?.energy ?? storeEnergy;
-  const adReward = data?.ad_reward ?? 5;
+  const adReward = data?.ad_reward ?? 3;
   const canPlay = energy.infinite || energy.value >= PHASE_OPEN_ENERGY;
   const minutes = energy.next_at ? Math.ceil((Date.parse(energy.next_at) - now) / 60_000) : null;
 

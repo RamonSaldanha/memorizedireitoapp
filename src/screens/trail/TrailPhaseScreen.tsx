@@ -14,11 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { playApi, requiredCorrect, type ActiveSegment, type CompletedSegment, type DisciplineLevelUp, type SegmentAnswer } from '../../api/play';
-import { apiErrorCode, trailApi, type EnergyCombo, type TrailChallengeResult } from '../../api/trail';
+import { apiErrorCode, trailApi, type EnergyCombo, type EnergyState, type TrailChallengeResult } from '../../api/trail';
 import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
 import { ConfirmSheet, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { ComboBurst } from '../../components/trail/ComboBurst';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
 import { EnergyPill } from '../../components/ui/EnergyPill';
@@ -54,6 +55,8 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
   const setEnergy = useUserStore((s) => s.setEnergy);
   const updateFromApi = useUserStore((s) => s.updateFromApi);
   const [combo, setCombo] = useState<EnergyCombo | null>(null);
+  // A energia com o combo espera o raiozinho chegar na bateria (ComboBurst)
+  const comboEnergy = useRef<EnergyState | null>(null);
   const [outOfEnergy, setOutOfEnergy] = useState(false);
 
   const { data, isLoading, error } = useQuery({
@@ -165,7 +168,12 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
     // Certo ou errado, a energia sai na hora (o progresso continua só no aparelho)
     try {
       const { data: spent } = await trailApi.attempt(phaseId, isPass);
-      setEnergy(spent.energy);
+      if (spent.combo && spent.combo.gained > 0) {
+        comboEnergy.current = spent.energy;
+        setEnergy({ ...spent.energy, value: spent.energy.value - spent.combo.gained });
+      } else {
+        setEnergy(spent.energy);
+      }
       setCombo(spent.combo);
       setOutOfEnergy(spent.out_of_energy);
     } catch {
@@ -437,6 +445,13 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
         onLeave={() => {
           setConfirmExit(false);
           navigation.goBack();
+        }}
+      />
+      <ComboBurst
+        combo={combo}
+        onArrive={() => {
+          if (comboEnergy.current) setEnergy(comboEnergy.current);
+          comboEnergy.current = null;
         }}
       />
       <ConfettiView />

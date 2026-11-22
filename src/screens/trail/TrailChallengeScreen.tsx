@@ -13,9 +13,11 @@ import {
   type CheckpointQuestion,
   type CheckpointResponse,
   type CheckpointStepResponse,
+  type EnergyState,
 } from '../../api/trail';
 import { GuidedSummary, ReadingPanel, useGuidedReading } from '../../components/trail/GuidedSummary';
 import { ChoiceList, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
+import { ComboBurst } from '../../components/trail/ComboBurst';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
 import { EnergyPill } from '../../components/ui/EnergyPill';
@@ -83,6 +85,8 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
   const energy = useUserStore((s) => s.energy);
   const setEnergy = useUserStore((s) => s.setEnergy);
   const [outOfEnergy, setOutOfEnergy] = useState(false);
+  // A energia com o combo espera o raiozinho chegar na bateria (ComboBurst)
+  const comboEnergy = useRef<EnergyState | null>(null);
   useEffect(() => {
     if (data.energy) setEnergy(data.energy);
   }, []);
@@ -198,7 +202,12 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
       if (response.is_correct) setCorrectCount((n) => n + 1);
       applyStep(response);
       setFeedback(response);
-      if (response.energy) setEnergy(response.energy);
+      if (response.energy && response.combo && response.combo.gained > 0) {
+        comboEnergy.current = response.energy;
+        setEnergy({ ...response.energy, value: response.energy.value - response.combo.gained });
+      } else if (response.energy) {
+        setEnergy(response.energy);
+      }
       setOutOfEnergy(Boolean(response.out_of_energy));
       // O comentário aparece embaixo das alternativas
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
@@ -387,6 +396,13 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
         </ResultBar>
       ) : null}
 
+      <ComboBurst
+        combo={feedback?.combo ?? null}
+        onArrive={() => {
+          if (comboEnergy.current) setEnergy(comboEnergy.current);
+          comboEnergy.current = null;
+        }}
+      />
       <ConfettiView />
     </SafeAreaView>
   );

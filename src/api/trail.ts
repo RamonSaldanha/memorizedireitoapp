@@ -29,7 +29,7 @@ export type EnergyStatusResponse = {
 };
 
 /** Mínimo para abrir uma fase nova (config/energy.php no servidor). */
-export const PHASE_OPEN_ENERGY = 10;
+export const PHASE_OPEN_ENERGY = 12;
 
 /* ===== Mapa ===== */
 
