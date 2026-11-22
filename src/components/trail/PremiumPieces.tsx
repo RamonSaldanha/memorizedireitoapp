@@ -34,7 +34,7 @@ export function YearlyPlan({ line }: { line?: string }) {
     <View style={[styles.planBase, { backgroundColor: BLUE }]}>
       <View style={[styles.plan, { borderColor: BLUE, backgroundColor: t.choiceSoft }]}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[styles.planName, { color: fg }]}>Premium anual</Text>
+          <Text style={[styles.planName, { color: fg }]}>Plus anual</Text>
           <Text style={[styles.planLine, { color: muted }]}>{line ?? `${YEARLY_PER_MONTH} por mês`}</Text>
         </View>
         <Text style={[styles.planPrice, { color: fg }]}>{YEARLY}</Text>

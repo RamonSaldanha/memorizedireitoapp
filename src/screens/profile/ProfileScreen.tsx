@@ -256,7 +256,7 @@ export function ProfileScreen() {
           <Pressable style={styles.row} onPress={handleOpenSubscription}>
             <Gem size={20} color={colors.blue[500]} />
             <View style={styles.rowContent}>
-              <Text style={[styles.rowLabel, { color: theme.foreground }]}>Premium</Text>
+              <Text style={[styles.rowLabel, { color: theme.foreground }]}>Plus</Text>
               <Text style={[styles.rowValue, { color: colors.gray[500] }]}>
                 {hasInfiniteLives ? 'Assinatura ativa' : 'Assine para energia infinita'}
               </Text>

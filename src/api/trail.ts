@@ -142,6 +142,8 @@ export type TrailChallengeResult = {
 
 export type TrailFinishResponse = {
   xp_gained: number;
+  // A parte do xp_gained que veio do combo de quem assina (servidores antigos não mandam)
+  combo_xp?: number;
   discipline_level_up: DisciplineLevelUp | null;
   user: { lives: number; xp: number; has_infinite_lives: boolean; energy: EnergyState };
 };

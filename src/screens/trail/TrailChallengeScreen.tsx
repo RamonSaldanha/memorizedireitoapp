@@ -7,7 +7,6 @@ import type { DisciplineLevelUp } from '../../api/play';
 import {
   apiErrorCode,
   boardLabel,
-  comboReward,
   trailApi,
   type CheckpointAnswerResponse,
   type CheckpointMaterial,
@@ -18,7 +17,7 @@ import {
 } from '../../api/trail';
 import { GuidedSummary, ReadingPanel, useGuidedReading } from '../../components/trail/GuidedSummary';
 import { ChoiceList, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
-import { ComboBurst } from '../../components/trail/ComboBurst';
+import { ComboBurst, ComboLine } from '../../components/trail/ComboBurst';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
 import { EnergyPill } from '../../components/ui/EnergyPill';
@@ -130,6 +129,11 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState(false);
   const [feedback, setFeedback] = useState<CheckpointAnswerResponse | null>(null);
+  // O "+5 XP" do combo de quem assina na barra de resultado: as faíscas descem até ele e o acendem
+  const comboXpRef = useRef<View>(null);
+  const [comboLit, setComboLit] = useState(false);
+  // O que o combo de quem assina rendeu no desafio (já dentro do xpGained), para o fim mostrar
+  const [comboXp, setComboXp] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [xpGained, setXpGained] = useState(0);
@@ -203,7 +207,12 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
       if (response.is_correct) setCorrectCount((n) => n + 1);
       applyStep(response);
       // O combo de quem assina rende XP na hora
-      if (response.combo?.xp) setXpGained((xp) => xp + (response.combo?.xp ?? 0));
+      if (response.combo?.xp) {
+        const gained = response.combo.xp;
+        setXpGained((xp) => xp + gained);
+        setComboXp((xp) => xp + gained);
+      }
+      setComboLit(false);
       setFeedback(response);
       if (response.energy && response.combo && response.combo.gained > 0) {
         comboEnergy.current = response.energy;
@@ -260,6 +269,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
           count={answeredCount}
           countLabel={answeredCount === 1 ? 'Questão' : 'Questões'}
           xp={xpGained}
+          comboXp={comboXp}
           accuracy={accuracy}
           premium={hasInfiniteLives}
           levelUp={levelUp}
@@ -376,11 +386,7 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
 
       {step.kind === 'question' && feedback ? (
         <ResultBar correct={feedback.is_correct} buttonLabel={outOfEnergy ? 'Sair' : undefined} onContinue={advance}>
-          {feedback.combo ? (
-            <ResultText correct={feedback.is_correct} bold>
-              Sequência de {feedback.combo.streak}!{comboReward(feedback.combo)}
-            </ResultText>
-          ) : null}
+          {feedback.combo ? <ComboLine combo={feedback.combo} correct={feedback.is_correct} targetRef={comboXpRef} lit={comboLit} /> : null}
           {outOfEnergy ? (
             <ResultText correct={feedback.is_correct} bold>
               Sua energia acabou. O que você fez fica guardado.
@@ -401,6 +407,8 @@ function Challenge({ data, onExit, onOutOfEnergy }: { data: CheckpointResponse; 
 
       <ComboBurst
         combo={feedback?.combo ?? null}
+        xpTarget={comboXpRef}
+        onSpark={() => setComboLit(true)}
         onArrive={() => {
           if (comboEnergy.current) setEnergy(comboEnergy.current);
           comboEnergy.current = null;

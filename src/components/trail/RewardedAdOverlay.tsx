@@ -176,7 +176,7 @@ export function RewardedAdOverlay({ ad, onClose }: { ad: RewardAd; onClose: (res
         ) : ad.kind === 'house' ? (
           <View style={styles.still}>
             <Image source={PREMIUM_GIF} style={styles.gif} resizeMode="contain" />
-            <Text style={[styles.stillTitle, { color: fg }]}>Memorize Direito Premium</Text>
+            <Text style={[styles.stillTitle, { color: fg }]}>Memorize Direito Plus</Text>
             <Text style={[styles.stillText, { color: muted }]}>Energia infinita, todas as leis, fantasias exclusivas e sem anúncios.</Text>
           </View>
         ) : (

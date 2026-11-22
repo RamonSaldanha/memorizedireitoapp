@@ -76,6 +76,9 @@ export const colors = {
       badSoft: '#f9edeb',
       badInk: '#a8423a',
       press: 'rgba(0,0,0,0.08)',
+      // XP (azul) e Plus (magenta), em texto: a barra do topo e o combo de quem assina
+      xpInk: '#1d4ed8',
+      plusInk: '#b8306f',
     },
     dark: {
       face: '#282622',
@@ -106,6 +109,8 @@ export const colors = {
       badSoft: '#2e1a18',
       badInk: '#efb0a8',
       press: 'rgba(0,0,0,0.35)',
+      xpInk: '#7db3ff',
+      plusInk: '#f3a3cb',
     },
     // Iguais nos dois temas
     brand: '#efc12f',
@@ -118,6 +123,13 @@ export const colors = {
     successEdge: '#1d5f38',
     premium: '#8b5cc7',
     premiumEdge: '#643f96',
+    // O XP é azul (contador do topo, raio do combo de quem assina) e o Plus é magenta (o
+    // convite e o selo do topo). Igual a --mz-xp e --mz-plus da web
+    xp: '#3b82f6',
+    xpEdge: '#1d4ed8',
+    xpLight: '#7db3ff',
+    plus: '#d6438d',
+    plusEdge: '#9c2a62',
   },
 
   // Game-specific

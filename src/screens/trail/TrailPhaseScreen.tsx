@@ -14,12 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { playApi, requiredCorrect, type ActiveSegment, type CompletedSegment, type DisciplineLevelUp, type SegmentAnswer } from '../../api/play';
-import { apiErrorCode, comboReward, trailApi, type EnergyCombo, type EnergyState, type TrailChallengeResult } from '../../api/trail';
+import { apiErrorCode, trailApi, type EnergyCombo, type EnergyState, type TrailChallengeResult } from '../../api/trail';
 import { ActiveChallenge } from '../../components/game/ActiveChallenge';
 import { CompletedSegmentView } from '../../components/game/CompletedSegment';
 import { PhaseControls } from '../../components/game/PhaseControls';
 import { ConfirmSheet, ResultBar, ResultText, TrailTopBar } from '../../components/trail/TrailUi';
-import { ComboBurst } from '../../components/trail/ComboBurst';
+import { ComboBurst, ComboLine } from '../../components/trail/ComboBurst';
 import { PhaseEnd } from '../../components/trail/PhaseEnd';
 import { GameButton } from '../../components/ui/GameButton';
 import { EnergyPill } from '../../components/ui/EnergyPill';
@@ -55,6 +55,11 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
   const setEnergy = useUserStore((s) => s.setEnergy);
   const updateFromApi = useUserStore((s) => s.updateFromApi);
   const [combo, setCombo] = useState<EnergyCombo | null>(null);
+  // O "+5 XP" do combo de quem assina na barra de resultado: as faíscas descem até ele e o acendem
+  const comboXpRef = useRef<View>(null);
+  const [comboLit, setComboLit] = useState(false);
+  // O que o combo de quem assina rendeu na fase (já dentro do xpGained), para o fim mostrar
+  const [comboXp, setComboXp] = useState(0);
   // A energia com o combo espera o raiozinho chegar na bateria (ComboBurst)
   const comboEnergy = useRef<EnergyState | null>(null);
   const [outOfEnergy, setOutOfEnergy] = useState(false);
@@ -174,6 +179,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
       } else {
         setEnergy(spent.energy);
       }
+      setComboLit(false);
       setCombo(spent.combo);
       setOutOfEnergy(spent.out_of_energy);
     } catch {
@@ -187,6 +193,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
       try {
         const { data: done } = await trailApi.finish(phaseId, Object.values(results));
         setXpGained(done.xp_gained);
+        setComboXp(done.combo_xp ?? 0);
         updateFromApi(done.user);
         setStage('done');
         fireConfetti();
@@ -299,6 +306,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
           count={total}
           countLabel="Desafios"
           xp={xpGained}
+          comboXp={comboXp}
           accuracy={accuracy}
           premium={hasInfiniteLives}
           levelUp={levelUp}
@@ -403,11 +411,7 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
           buttonLabel={outOfEnergy ? 'Sair' : lastResult.passed ? 'Continuar' : 'Tentar de novo'}
           onContinue={next}
         >
-          {combo ? (
-            <ResultText correct={lastResult.passed} bold>
-              Sequência de {combo.streak}!{comboReward(combo)}
-            </ResultText>
-          ) : null}
+          {combo ? <ComboLine combo={combo} correct={lastResult.passed} targetRef={comboXpRef} lit={comboLit} /> : null}
           {outOfEnergy ? (
             <ResultText correct={lastResult.passed} bold>
               Sua energia acabou. Esta fase vai recomeçar.
@@ -449,6 +453,8 @@ export function TrailPhaseScreen({ route, navigation }: Props) {
       />
       <ComboBurst
         combo={combo}
+        xpTarget={comboXpRef}
+        onSpark={() => setComboLit(true)}
         onArrive={() => {
           if (comboEnergy.current) setEnergy(comboEnergy.current);
           comboEnergy.current = null;

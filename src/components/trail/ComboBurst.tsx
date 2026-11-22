@@ -4,32 +4,47 @@ import Svg, { Path } from 'react-native-svg';
 import { BatteryCharging, Zap } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { EnergyCombo } from '../../api/trail';
+import { comboReward } from '../../api/trail';
 import { useAppearance } from '../../hooks/useAppearance';
-import { familyTokens } from '../../theme/colors';
+import { colors, familyTokens } from '../../theme/colors';
+import { ResultText } from './TrailUi';
 
 /**
  * A festa do combo (acertos seguidos na fase e no desafio): a tela pisca, raios cruzam a tela,
- * "COMBO x3" salta no meio com a energia ganha e um raiozinho voa até a bateria do topo; quando
- * ele chega, `onArrive` (a tela credita a energia, e a pílula pula). Cresce com a sequência:
- * x3 amarelo, x6 laranja ("Pegando fogo!"), x9 laranja forte ("Imparável!"). Quem assina não
- * ganha energia: o combo mostra "+5 XP" e não há raiozinho voando. Igual ao web
- * (components/beta-play/ComboBurst.vue). Com "reduzir movimento", só credita.
+ * "COMBO x3" salta no meio com o ganho e termina num destino; aí `onArrive`. Cresce com a
+ * sequência (x3, x6 "Pegando fogo!", x9 "Imparável!").
+ *
+ * - Quem não assina ganha energia: amarelo e laranja, e um raiozinho voa até a bateria do topo
+ *   (a tela credita a energia quando ele chega, e a pílula pula).
+ * - Quem assina ganha XP (`combo.xp`): a tempestade é azul e o "+5 XP" se parte em faíscas que
+ *   descem até o "+5 XP" da barra de resultado (`xpTarget`, o ComboLine); cada uma que chega
+ *   chama `onSpark` e ele acende. Não há contador de XP na fase.
+ *
+ * Igual ao web (components/beta-play/ComboBurst.vue). Com "reduzir movimento", só credita.
  */
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-const BOLT = '#f7d84a';
-const TIERS = [
-  { c: '#efc12f', e: '#b38c17', bolts: 2, sparks: 0, kick: null },
-  { c: '#f59e0b', e: '#b45309', bolts: 3, sparks: 10, kick: 'Pegando fogo!' },
-  { c: '#f97316', e: '#c2410c', bolts: 5, sparks: 16, kick: 'Imparável!' },
-] as const;
-type Tier = (typeof TIERS)[number];
-const tierOf = (streak: number): Tier => TIERS[streak >= 9 ? 2 : streak >= 6 ? 1 : 0];
+type Tier = { c: string; e: string; bolt: string; bolts: number; sparks: number; kick: string | null };
+const TIERS: Tier[] = [
+  { c: '#efc12f', e: '#b38c17', bolt: '#f7d84a', bolts: 2, sparks: 0, kick: null },
+  { c: '#f59e0b', e: '#b45309', bolt: '#f7d84a', bolts: 3, sparks: 10, kick: 'Pegando fogo!' },
+  { c: '#f97316', e: '#c2410c', bolt: '#f7d84a', bolts: 5, sparks: 16, kick: 'Imparável!' },
+];
+// O combo de quem assina: azul, do mais claro ao mais forte
+const XP_TIERS: Tier[] = [
+  { c: '#7db3ff', e: '#1d4ed8', bolt: '#7db3ff', bolts: 3, sparks: 0, kick: null },
+  { c: '#60a5fa', e: '#1e40af', bolt: '#7db3ff', bolts: 4, sparks: 10, kick: 'Eletrizante!' },
+  { c: '#93c5fd', e: '#1e3a8a', bolt: '#a5c8ff', bolts: 6, sparks: 16, kick: 'Imparável!' },
+];
+// Em quantas faíscas o XP se parte
+const XP_SPARKS = 5;
+const tierOf = (streak: number, xp: boolean): Tier => (xp ? XP_TIERS : TIERS)[streak >= 9 ? 2 : streak >= 6 ? 1 : 0];
 
 type Bolt = { d: string; len: number };
 type Spark = { dx: number; dy: number; rot: number; color: string };
-type Run = { id: number; combo: EnergyCombo; tier: Tier; bolts: Bolt[]; sparks: Spark[] };
+type Run = { id: number; combo: EnergyCombo; tier: Tier; xp: boolean; bolts: Bolt[]; sparks: Spark[] };
+type Point = { x: number; y: number };
 
 // Um raio em zigue-zague de cima a baixo da tela
 function zigzag(w: number, h: number, i: number, n: number): Bolt {
@@ -69,7 +84,54 @@ function OutlinedWord({ text, size, c, e }: { text: string; size: number; c: str
   );
 }
 
-export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onArrive?: () => void }) {
+/**
+ * A linha do combo na barra de resultado: "Sequência de 3!" e o que ele rendeu. O "+5 XP" de quem
+ * assina é o alvo das faíscas (`targetRef`) e acende (`lit`) quando elas chegam.
+ */
+export function ComboLine({
+  combo,
+  correct,
+  targetRef,
+  lit,
+}: {
+  combo: EnergyCombo;
+  correct: boolean;
+  targetRef?: React.RefObject<View | null>;
+  lit?: boolean;
+}) {
+  const { isDark } = useAppearance();
+  const t = familyTokens(isDark);
+  if (!(combo.xp ?? 0)) {
+    return (
+      <ResultText correct={correct} bold>
+        Sequência de {combo.streak}!{comboReward(combo)}
+      </ResultText>
+    );
+  }
+  return (
+    <View style={styles.comboLine}>
+      <ResultText correct={correct} bold>
+        Sequência de {combo.streak}!
+      </ResultText>
+      <View ref={targetRef} collapsable={false} style={[styles.comboXp, lit && { backgroundColor: colors.family.xp }]}>
+        <Zap size={14} color={lit ? '#fff' : t.xpInk} fill={lit ? '#fff' : t.xpInk} />
+        <Text style={[styles.comboXpText, { color: lit ? '#fff' : t.xpInk }]}>+{combo.xp} XP</Text>
+      </View>
+    </View>
+  );
+}
+
+export function ComboBurst({
+  combo,
+  onArrive,
+  xpTarget,
+  onSpark,
+}: {
+  combo: EnergyCombo | null;
+  onArrive?: () => void;
+  xpTarget?: React.RefObject<View | null>;
+  onSpark?: () => void;
+}) {
   const { isDark } = useAppearance();
   const t = familyTokens(isDark);
   const insets = useSafeAreaInsets();
@@ -77,8 +139,11 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
   const [size, setSize] = useState({ w: 0, h: 0 });
   const originY = useRef(0);
   const [run, setRun] = useState<Run | null>(null);
+  const [sparkTo, setSparkTo] = useState<Point | null>(null);
   const arrive = useRef(onArrive);
   arrive.current = onArrive;
+  const spark = useRef(onSpark);
+  spark.current = onSpark;
 
   const flash = useRef(new Animated.Value(0)).current;
   const draw = useRef(new Animated.Value(0)).current;
@@ -87,30 +152,57 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
   const out = useRef(new Animated.Value(0)).current;
   const fly = useRef(new Animated.Value(0)).current;
   const burst = useRef(new Animated.Value(0)).current;
+  const xpFly = useRef(Array.from({ length: XP_SPARKS }, () => new Animated.Value(0))).current;
+
+  const { w, h } = size;
+  const cy = h * 0.42;
+  // De onde o raiozinho sai (o ganho, no meio)
+  const from = { x: w / 2, y: cy + 40 };
+
+  // Onde está o "+5 XP" da barra de resultado, nas coordenadas desta camada
+  const measureTarget = () =>
+    new Promise<Point>((resolve) => {
+      const fallback = { x: w / 2, y: h - 120 };
+      const node = xpTarget?.current;
+      if (!node) return resolve(fallback);
+      node.measureInWindow((x, y, tw, th) => {
+        resolve(tw > 0 ? { x: x + tw / 2, y: y + th / 2 - originY.current } : fallback);
+      });
+    });
 
   useEffect(() => {
     if (!combo) return;
     let alive = true;
+    const xp = (combo.xp ?? 0) > 0;
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (!alive) return;
       if (reduce || !size.w) {
         arrive.current?.();
         return;
       }
-      const tier = tierOf(combo.streak);
+      const tier = tierOf(combo.streak, xp);
       const bolts = Array.from({ length: tier.bolts }, (_, i) => zigzag(size.w, size.h, i, tier.bolts));
       const sparks = Array.from({ length: tier.sparks }, (_, i) => {
         const a = (Math.PI * 2 * i) / tier.sparks + Math.random() * 0.5;
         const dist = 120 * (0.6 + Math.random() * 0.6);
-        return { dx: Math.cos(a) * dist, dy: Math.sin(a) * dist, rot: 180 + Math.random() * 180, color: i % 3 === 0 ? '#2b8a52' : i % 2 ? tier.c : BOLT };
+        const third = xp ? colors.family.xp : '#2b8a52';
+        return { dx: Math.cos(a) * dist, dy: Math.sin(a) * dist, rot: 180 + Math.random() * 180, color: i % 3 === 0 ? third : i % 2 ? tier.c : tier.bolt };
       });
-      [flash, draw, pop, out, fly, burst].forEach((v) => v.setValue(0));
+      [flash, draw, pop, out, fly, burst, ...xpFly].forEach((v) => v.setValue(0));
       boltFade.setValue(1);
-      setRun({ id: Date.now(), combo, tier, bolts, sparks });
+      setSparkTo(null);
+      setRun({ id: Date.now(), combo, tier, xp, bolts, sparks });
+
+      const finish = () => {
+        if (!alive) return;
+        arrive.current?.();
+        setRun(null);
+        setSparkTo(null);
+      };
 
       Animated.parallel([
         Animated.sequence([
-          Animated.timing(flash, { toValue: 0.9, duration: 130, useNativeDriver: true }),
+          Animated.timing(flash, { toValue: xp ? 0.3 : 0.9, duration: 130, useNativeDriver: true }),
           Animated.timing(flash, { toValue: 0, duration: 390, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         ]),
         Animated.timing(draw, { toValue: 1, duration: 520, easing: Easing.out(Easing.quad), useNativeDriver: false }),
@@ -119,19 +211,34 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
         Animated.spring(pop, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
       ]).start(() => {
         if (!alive) return;
-        // XP de quem assina: não há bateria para onde voar
-        const xp = (combo.xp ?? 0) > 0;
-        Animated.sequence([
-          Animated.delay(xp ? 700 : 450),
-          Animated.parallel([
-            Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-            ...(xp ? [] : [Animated.timing(fly, { toValue: 1, duration: 620, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true })]),
-          ]),
-        ]).start(({ finished }) => {
+        if (!xp) {
+          Animated.sequence([
+            Animated.delay(450),
+            Animated.parallel([
+              Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+              Animated.timing(fly, { toValue: 1, duration: 620, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true }),
+            ]),
+          ]).start(({ finished }) => (finished ? finish() : alive && setRun(null)));
+          return;
+        }
+
+        // Quem assina: o "+5 XP" some e as faíscas descem uma a uma até a barra de resultado
+        setTimeout(async () => {
           if (!alive) return;
-          if (finished) arrive.current?.();
-          setRun(null);
-        });
+          const to = await measureTarget();
+          if (!alive) return;
+          setSparkTo(to);
+          Animated.timing(out, { toValue: 1, duration: 280, easing: Easing.in(Easing.quad), useNativeDriver: true }).start();
+          let landed = 0;
+          xpFly.forEach((v, i) =>
+            Animated.timing(v, { toValue: 1, duration: 520, delay: i * 90, easing: Easing.bezier(0.5, 0, 0.3, 1), useNativeDriver: true }).start(() => {
+              if (!alive) return;
+              spark.current?.();
+              landed++;
+              if (landed === XP_SPARKS) setTimeout(finish, 250);
+            }),
+          );
+        }, 650);
       });
     });
     return () => {
@@ -139,11 +246,7 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
     };
   }, [combo]);
 
-  const { w, h } = size;
-  const cy = h * 0.42;
-  // De onde o raiozinho sai (o ganho de energia, no meio) e para onde vai (a bateria do topo,
-  // à direita da barra de progresso: TrailTopBar)
-  const from = { x: w / 2, y: cy + 40 };
+  // Para onde o raiozinho da energia vai (a bateria do topo, à direita da barra de progresso: TrailTopBar)
   const to = { x: w - 36, y: insets.top + 32 - originY.current };
   const mid = { x: (from.x + to.x) / 2 + 30, y: to.y + (from.y - to.y) * 0.25 };
 
@@ -161,7 +264,12 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
     >
       {run ? (
         <>
-          <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#4a4019' : '#fff4c2', opacity: flash }]} />
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: run.xp ? colors.family.xp : isDark ? '#4a4019' : '#fff4c2', opacity: flash },
+            ]}
+          />
 
           <Animated.View style={[StyleSheet.absoluteFill, { opacity: boltFade }]}>
             <Svg width={w} height={h}>
@@ -171,7 +279,7 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
                 return (
                   <React.Fragment key={i}>
                     <AnimatedPath d={bolt.d} fill="none" stroke={run.tier.e} strokeOpacity={0.3} strokeWidth={22} strokeLinejoin="miter" strokeDasharray={[bolt.len, bolt.len]} strokeDashoffset={offset} />
-                    <AnimatedPath d={bolt.d} fill="none" stroke={BOLT} strokeOpacity={0.95} strokeWidth={14} strokeLinejoin="miter" strokeDasharray={[bolt.len, bolt.len]} strokeDashoffset={offset} />
+                    <AnimatedPath d={bolt.d} fill="none" stroke={run.tier.bolt} strokeOpacity={0.95} strokeWidth={14} strokeLinejoin="miter" strokeDasharray={[bolt.len, bolt.len]} strokeDashoffset={offset} />
                   </React.Fragment>
                 );
               })}
@@ -218,10 +326,10 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
           >
             {run.tier.kick ? <Text style={[styles.kick, { color: run.tier.e }]}>{run.tier.kick}</Text> : null}
             <OutlinedWord text={`COMBO x${run.combo.streak}`} size={run.combo.streak >= 9 ? 48 : 44} c={run.tier.c} e={run.tier.e} />
-            {(run.combo.xp ?? 0) > 0 ? (
-              <View style={[styles.gain, { backgroundColor: t.brandSoft }]}>
-                <Zap size={18} color={t.brandSoftInk} fill={t.brandSoftInk} />
-                <Text style={[styles.gainText, { color: t.brandSoftInk }]}>+{run.combo.xp} XP</Text>
+            {run.xp ? (
+              <View style={[styles.gain, { backgroundColor: colors.family.xp }]}>
+                <Zap size={18} color="#fff" fill="#fff" />
+                <Text style={[styles.gainText, { color: '#fff' }]}>+{run.combo.xp} XP</Text>
               </View>
             ) : run.combo.gained > 0 ? (
               <View style={[styles.gain, { backgroundColor: t.brandSoft }]}>
@@ -231,21 +339,48 @@ export function ComboBurst({ combo, onArrive }: { combo: EnergyCombo | null; onA
             ) : null}
           </Animated.View>
 
-          <Animated.View
-            style={[
-              styles.flyer,
-              {
-                opacity: fly.interpolate({ inputRange: [0, 0.01, 0.9, 1], outputRange: [0, 1, 1, 0.2] }),
-                transform: [
-                  { translateX: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.x - 15, mid.x - 15, to.x - 15] }) },
-                  { translateY: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.y - 15, mid.y - 15, to.y - 15] }) },
-                  { scale: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1.5, 1.1, 0.5] }) },
-                ],
-              },
-            ]}
-          >
-            <Zap size={30} color="#b38c17" fill="#efc12f" />
-          </Animated.View>
+          {run.xp ? (
+            sparkTo ? (
+              xpFly.map((v, i) => {
+                const spread = (i - (XP_SPARKS - 1) / 2) * 28;
+                const midY = from.y + (sparkTo.y - from.y) * 0.45;
+                return (
+                  <Animated.View
+                    key={i}
+                    style={[
+                      styles.xpSpark,
+                      {
+                        opacity: v.interpolate({ inputRange: [0, 0.01, 0.9, 1], outputRange: [0, 1, 1, 0.2] }),
+                        transform: [
+                          { translateX: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.x - 10 + spread / 3, (from.x + sparkTo.x) / 2 + spread - 10, sparkTo.x - 10] }) },
+                          { translateY: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.y - 10, midY - 10, sparkTo.y - 10] }) },
+                          { scale: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1.3, 1, 0.5] }) },
+                        ],
+                      },
+                    ]}
+                  >
+                    <Zap size={20} color={colors.family.xpEdge} fill={colors.family.xpLight} />
+                  </Animated.View>
+                );
+              })
+            ) : null
+          ) : (
+            <Animated.View
+              style={[
+                styles.flyer,
+                {
+                  opacity: fly.interpolate({ inputRange: [0, 0.01, 0.9, 1], outputRange: [0, 1, 1, 0.2] }),
+                  transform: [
+                    { translateX: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.x - 15, mid.x - 15, to.x - 15] }) },
+                    { translateY: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.y - 15, mid.y - 15, to.y - 15] }) },
+                    { scale: fly.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1.5, 1.1, 0.5] }) },
+                  ],
+                },
+              ]}
+            >
+              <Zap size={30} color="#b38c17" fill="#efc12f" />
+            </Animated.View>
+          )}
         </>
       ) : null}
     </View>
@@ -260,4 +395,8 @@ const styles = StyleSheet.create({
   gainText: { fontSize: 15, fontWeight: '900' },
   spark: { position: 'absolute', width: 9, height: 9, borderRadius: 2 },
   flyer: { position: 'absolute', left: 0, top: 0, width: 30, height: 30 },
+  xpSpark: { position: 'absolute', left: 0, top: 0, width: 20, height: 20 },
+  comboLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  comboXp: { flexDirection: 'row', alignItems: 'center', gap: 3, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 },
+  comboXpText: { fontSize: 14, fontWeight: '800' },
 });

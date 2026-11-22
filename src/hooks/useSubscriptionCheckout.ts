@@ -76,7 +76,7 @@ export function useSubscriptionCheckout() {
   }, []);
 
   const openSubscription = async () => {
-    log('clicou Premium → abrindo navegador');
+    log('clicou Plus → abrindo navegador');
     pendingSyncRef.current = true;
     let result: WebBrowser.WebBrowserResult | undefined;
     try {

@@ -50,6 +50,7 @@ export function PhaseEnd({
   count,
   countLabel,
   xp,
+  comboXp = 0,
   accuracy,
   premium,
   levelUp = null,
@@ -60,6 +61,8 @@ export function PhaseEnd({
   count: number;
   countLabel: string;
   xp: number;
+  // A parte do XP que veio do combo de quem assina (Plus), mostrada embaixo dos números
+  comboXp?: number;
   accuracy: number;
   premium: boolean;
   // A estrela que a fase deu (chega com o fim da fase), se deu
@@ -128,6 +131,7 @@ export function PhaseEnd({
           count={count}
           countLabel={countLabel}
           xp={xp}
+          comboXp={comboXp}
           accuracy={accuracy}
           onContinue={() => (levelUp ? highlightTo('achievement') : afterAchievement())}
         />
@@ -167,6 +171,7 @@ function ResultScene({
   count,
   countLabel,
   xp,
+  comboXp,
   accuracy,
   onContinue,
 }: {
@@ -175,6 +180,7 @@ function ResultScene({
   count: number;
   countLabel: string;
   xp: number;
+  comboXp: number;
   accuracy: number;
   onContinue: () => void;
 }) {
@@ -183,7 +189,9 @@ function ResultScene({
   const muted = isDark ? colors.dark.mutedForeground : colors.mutedForeground;
   const border = isDark ? colors.dark.border : colors.border;
   const green = isDark ? '#4ade80' : colors.green[600];
-  const xpColor = isDark ? colors.family.brand : colors.family.brandEdge;
+  const t = familyTokens(isDark);
+  const xpColor = t.xpInk;
+  const accuracyColor = isDark ? colors.family.brand : colors.family.brandEdge;
   const shownXp = useCountUp(xp, 700);
   const shownAccuracy = useCountUp(accuracy, 800);
 
@@ -209,10 +217,20 @@ function ResultScene({
       <View style={[styles.stats, { borderColor: border }]}>
         <Stat icon={<FileCheck size={20} color={green} />} value={String(count)} label={countLabel} color={green} muted={muted} />
         <View style={[styles.statDivider, { backgroundColor: border }]} />
-        <Stat icon={<Zap size={20} color={xpColor} />} value={String(shownXp)} label="XP recebido" color={xpColor} muted={muted} />
+        <Stat icon={<Zap size={20} color={xpColor} fill={xpColor} />} value={String(shownXp)} label="XP recebido" color={xpColor} muted={muted} />
         <View style={[styles.statDivider, { backgroundColor: border }]} />
-        <Stat icon={<Target size={20} color={colors.blue[500]} />} value={`${shownAccuracy}%`} label="Precisão" color={colors.blue[500]} muted={muted} />
+        <Stat icon={<Target size={20} color={accuracyColor} />} value={`${shownAccuracy}%`} label="Precisão" color={accuracyColor} muted={muted} />
       </View>
+
+      {/* Quanto o combo rendeu a mais, para quem assina */}
+      {comboXp > 0 ? (
+        <View style={styles.comboBonus}>
+          <Zap size={16} color={xpColor} fill={xpColor} />
+          <Text style={[styles.comboBonusText, { color: xpColor }]}>
+            +{comboXp} XP dos combos, por ser <Text style={{ color: t.plusInk }}>Plus</Text>
+          </Text>
+        </View>
+      ) : null}
 
       <GameButton variant="main" size="lg" fullWidth onPress={onContinue} style={{ marginTop: 24 }}>
         Continuar
@@ -304,7 +322,7 @@ function PremiumInvite({ reduceMotion, onSkip }: { reduceMotion: boolean; onSkip
         <View style={[styles.frame, { width: hero, height: hero }]}>
           <Image source={NAMED} style={{ width: hero, height: hero }} resizeMode="contain" accessibilityIgnoresInvertColors />
         </View>
-        <Text style={[styles.inviteTitle, { color: fg }]}>Com Premium você</Text>
+        <Text style={[styles.inviteTitle, { color: fg }]}>Com o Plus você</Text>
         <Marked key={index} text={ENDINGS[index]} fontSize={22} color={fg} delay={150} fadeIn={index > 0} />
       </View>
 
@@ -352,6 +370,8 @@ function useCountUp(target: number, delay = 0) {
 }
 
 const styles = StyleSheet.create({
+  comboBonus: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12 },
+  comboBonusText: { fontSize: 14, fontWeight: '700' },
   fill: { flex: 1, overflow: 'hidden' },
   bands: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   band: { position: 'absolute', left: '-20%', width: '140%', height: '37%', borderRadius: 999 },
